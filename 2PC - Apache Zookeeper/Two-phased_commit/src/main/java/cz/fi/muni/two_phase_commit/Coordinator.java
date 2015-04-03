@@ -131,7 +131,7 @@ public class Coordinator extends SyncPrimitive {
     }
     
     public static void coordinatorTest(String args[]) throws InterruptedException, KeeperException, UnsupportedEncodingException {
-        cz.fi.muni.two_phase_commit.Coordinator coordinator = new cz.fi.muni.two_phase_commit.Coordinator(args[0], "/Tx", new Integer(args[1]), args[2]);
+        Coordinator coordinator = new Coordinator(args[0], "/Tx", new Integer(args[1]), args[2]);
 
         boolean result = coordinator.enter();
 

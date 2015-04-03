@@ -38,12 +38,12 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
             case "canCommit?": {
                 BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
                 String line;
-                    if ("commit".equals(LockFileDemo.decideTransaction())) {
-                        line = "commit";
-                        lock = LockFileDemo.lockFile();
-                    } else {
-                        line = "abort";
-                    }
+                if ("commit".equals(LockFileDemo.decideTransaction())) {
+                    line = "commit";
+                    lock = LockFileDemo.lockFile();
+                } else {
+                    line = "abort";
+                }
                 ctx.writeAndFlush(line + "\r\n");
                 break;
             }

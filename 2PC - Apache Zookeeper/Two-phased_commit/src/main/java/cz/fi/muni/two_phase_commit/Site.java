@@ -6,7 +6,9 @@
 package cz.fi.muni.two_phase_commit;
 
 import static cz.fi.muni.two_phase_commit.SyncPrimitive.zk;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.channels.FileLock;
 import java.util.List;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -36,20 +38,35 @@ public class Site extends SyncPrimitive {
         }
     }
 
-    boolean enter() throws KeeperException, InterruptedException, UnsupportedEncodingException {
+    boolean enter() throws KeeperException, InterruptedException, UnsupportedEncodingException, IOException {
         //create the given site node under the root element
         createSiteNode();
         //wait for other sites to enter
         waitForAllSites();
-            //wait for the coordinator to write the transaction string to the root node
+        //wait for the coordinator to write the transaction string to the root node
         //and put it to the transaction variable
         waitForTransaction();
-            //database work and decision to commit or not to commit
-        //TODO
+        
+        //decide transaction and lock resources when agree with commit
+        FileLock lock = null;
+        SyncPrimitive.Decision decision;
+        if ("commit".equals(LockFileDemo.decideTransaction())) {
+            decision = SyncPrimitive.Decision.commit;
+            lock = LockFileDemo.lockFile();
+        } else {
+            decision = SyncPrimitive.Decision.abort;
+        }
+        
         //write decision as data of the site node
-        voteForCommit(SyncPrimitive.Decision.commit);
+        voteForCommit(decision);
         //get final result
         SyncPrimitive.Decision result = getResult();
+        
+        //release resources
+        if (decision == SyncPrimitive.Decision.commit) {
+            LockFileDemo.releaseLock(lock);
+        }
+        
         //return true if commited
         switch (result) {
             case commit:
@@ -140,7 +157,7 @@ public class Site extends SyncPrimitive {
    
 
     public static void siteTest(String args[]) throws UnsupportedEncodingException, InterruptedException, KeeperException, Exception {
-        cz.fi.muni.two_phase_commit.Site site = new cz.fi.muni.two_phase_commit.Site(args[0], "/Tx", new Integer(args[1]));
+        Site site = new Site(args[0], "/Tx", new Integer(args[1]));
 
         boolean result = site.enter();
 
