@@ -15,6 +15,7 @@
  */
 package cz.muni.fi.netty.twoPhaseCommit.participant;
 
+import cz.muni.fi.netty.twoPhaseCommit.participant.LockFileDemo.TransactionDecision;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -38,7 +39,7 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
             case "canCommit?": {
                 BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
                 String line;
-                if ("commit".equals(LockFileDemo.decideTransaction())) {
+                if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
                     line = "commit";
                     lock = LockFileDemo.lockFile();
                 } else {

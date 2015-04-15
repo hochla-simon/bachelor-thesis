@@ -3,13 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.netty.twoPhaseCommit.participant;
+package TwoPhaseCommit;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LockFileDemo {
     
@@ -17,28 +20,28 @@ public class LockFileDemo {
         commit, abort
     };
     
-    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop\\";
+    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop";
     private static final String FILE_NAME = "file.txt";
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
     private static final File lockFile = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
     
-    
-    public static void main(String[] args) {
+    public static FileLock lockFile() {
         try {
-            Participant.run();
-        } catch (Exception e) {
-            e.printStackTrace();
+            // This will create the file if it doesn't exit.
+            file = new RandomAccessFile(lockFile, "rw");
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-    
-    public static FileLock lockFile() throws IOException, InterruptedException {
-        // This will create the file if it doesn't exit.
-        file = new RandomAccessFile(lockFile, "rw");
         FileChannel f = file.getChannel();
 
-        FileLock lock = f.tryLock();
+        FileLock lock = null;
+        try {
+            lock = f.tryLock();
+        } catch (IOException ex) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         if (lock == null || !lock.isValid()) {
             System.out.println("Lock for file " + file + " cannot be applied.");
@@ -47,14 +50,22 @@ public class LockFileDemo {
         return lock;
     }
     
-    public static void releaseLock(FileLock lock) throws IOException  {
+    public static void releaseLock(FileLock lock) {
         if (lock != null && lock.isValid()) {
-            lock.release();
+            try {
+                lock.release();
+            } catch (IOException ex) {
+                Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             System.out.println("Lock " + lock + " is unvalid.");
         }
         if (file != null) {
-            file.close();
+            try {
+                file.close();
+            } catch (IOException ex) {
+                Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     

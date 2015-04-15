@@ -18,5 +18,5 @@
             <type>jar</type>
         </dependency>
     </dependencies>
-    <name>Two-phaseCommit</name>
+    <name>TwoPhaseCommit</name>
 </project>
