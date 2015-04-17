@@ -18,12 +18,7 @@ package cz.muni.fi.netty.threePhaseCommit.participant;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import static cz.muni.fi.netty.threePhaseCommit.participant.LockFileDemo.decideTransaction;
-import static cz.muni.fi.netty.threePhaseCommit.participant.LockFileDemo.lockFile;
-import static cz.muni.fi.netty.threePhaseCommit.participant.LockFileDemo.releaseLock;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.channels.FileLock;
 
 /**
@@ -39,31 +34,31 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
         
         switch(msg) {
             case "canCommit?": {
-                BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
                 String line;
                 if ("commit".equals(LockFileDemo.decideTransaction())) {
                     line = "Yes";
                     lock = LockFileDemo.lockFile();
                 } else {
-                    if (lock != null) {
-                        LockFileDemo.releaseLock(lock);
-                    }
                     line = "No";
                 }
                 ctx.writeAndFlush(line + "\r\n");
                 break;
             }
             case "preCommit": {
-                BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
                 String line = "ACK";
                 ctx.writeAndFlush(line + "\r\n");
                 break;
             }
             case "doCommit": {
-                BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
                 String line = "haveCommited";
                 ctx.writeAndFlush(line + "\r\n");
                 LockFileDemo.releaseLock(lock);
+                break;
+            }
+            case "abort": {
+                if (lock != null) {
+                    LockFileDemo.releaseLock(lock);
+                }
                 break;
             }
         }
