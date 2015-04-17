@@ -3,12 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.leader_election;
+package cz.muni.fi.twophasecommit;
 
 /**
  *
- * @author simon
+ * @author Simon
  */
-public class ElectionCandidate {
-    
+public class ParticipantDemo {
+    public static void main(String[] args) {
+        
+    }
 }
