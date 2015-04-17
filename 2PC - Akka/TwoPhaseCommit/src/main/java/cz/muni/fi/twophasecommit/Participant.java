@@ -5,9 +5,6 @@
  */
 package cz.muni.fi.twophasecommit;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
 import akka.actor.UntypedActor;
 import cz.muni.fi.twophasecommit.LockFileDemo.TransactionDecision;
 import java.nio.channels.FileLock;
@@ -25,23 +22,31 @@ public class Participant extends UntypedActor{
 
     @Override
     public void onReceive(Object msg) {
-        if (msg == Coordinator.Request.canCommit) {
-            Result result;
-            if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
-                result = Result.commit;
-                lock = LockFileDemo.lockFile();
-            } else {
-                result = Result.abort;
+        if (msg instanceof Coordinator.Request) {
+            Coordinator.Request request = (Coordinator.Request)msg;
+            switch(request) {
+                case canCommit: {
+                    Result result;
+                    if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
+                        result = Result.commit;
+                        lock = LockFileDemo.lockFile();
+                    } else {
+                        result = Result.abort;
+                    }
+                    getSender().tell(result, getSelf());
+                    break;
+                } case commit: {
+                    LockFileDemo.releaseLock(lock);
+                    getContext().stop(getSelf());
+                    break;
+                } case abort: {
+                    if (lock != null) {
+                        LockFileDemo.releaseLock(lock);
+                    }
+                    getContext().stop(getSelf());
+                    break;
+                }
             }
-            getSender().tell(result, getSelf());
-        } else if (msg == Coordinator.Request.commit) {
-            LockFileDemo.releaseLock(lock);
-            getContext().stop(getSelf());
-        } else if (msg == Coordinator.Request.abort) {
-            if (lock != null) {
-                LockFileDemo.releaseLock(lock);
-            }
-            getContext().stop(getSelf());
         } else {
             unhandled(msg);
         }

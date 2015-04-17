@@ -8,11 +8,8 @@ package cz.muni.fi.twophasecommit;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import akka.routing.BroadcastGroup;
 import cz.muni.fi.twophasecommit.Participant.Result;
 import java.util.HashSet;
@@ -55,17 +52,22 @@ public class Coordinator extends UntypedActor {
     public void onReceive(Object message) {
         if (message instanceof Result) {
             Result result = (Result) message;
-            if(result == Result.commit) {
-                participantsHavingCommmited.add(getSender());
-                if (participantsHavingCommmited.size() == nrOfParticipants) {
-                    listener.tell("Transaction has been commited.", getSelf());
+            switch (result) {
+                case commit: {
+                    participantsHavingCommmited.add(getSender());
+                    if (participantsHavingCommmited.size() == nrOfParticipants) {
+                        listener.tell("Transaction has been commited.", getSelf());
+                        // Stops this actor and all its supervised children
+                        getContext().stop(getSelf());
+                    }
+                    break;
+                }
+                case abort: {
+                    listener.tell("Transaction has been aborted.", getSelf());
                     // Stops this actor and all its supervised children
                     getContext().stop(getSelf());
+                    break;
                 }
-            } else {
-                listener.tell("Transaction has been aborted.", getSelf());
-                // Stops this actor and all its supervised children
-                getContext().stop(getSelf());
             }
         } else {
             unhandled(message);
