@@ -1,6 +1,6 @@
-    package TwoPhaseCommit;
+package ThreePhaseCommit;
 
-import TwoPhaseCommit.LockFileDemo.TransactionDecision;
+import ThreePhaseCommit.LockFileDemo.TransactionDecision;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.util.logging.Level;
@@ -24,7 +24,7 @@ public class Participant {
     private String result = "";
     private static Integer mutex;
     
-    public boolean performTwoPhaseCommit() {
+    public boolean performThreePhaseCommit() {
         //create cache manager
         EmbeddedCacheManager embeddedCacheManager = null;
         try {
@@ -33,18 +33,18 @@ public class Participant {
             Logger.getLogger(Coordinator.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        //getting coordinator and sites caches
+        //get coordinator and sites caches
         coordinatorCache = embeddedCacheManager.getCache("coordinator cache");
         sitesCache = embeddedCacheManager.getCache("sites cache");
         
-        //setting listener for watching changes in coordinator cache
+        //set listener for watching changes in coordinator cache
         CoordinatorListener coordinatorListener = new CoordinatorListener();
         coordinatorCache.addListener(coordinatorListener);
         
-        //initialize synchronization primtive for result change
+        //initialize synchronization primitive for the result change
         mutex = new Integer(-1);
         
-        //waiting for the listener to set the result value
+        //wait for the listener to set the result value
         synchronized (mutex) {
             try {
                 mutex.wait();
@@ -53,17 +53,17 @@ public class Participant {
             }
         }
         
-        //stopping the cache manager
+        //stop the cache manager
         embeddedCacheManager.stop();
         
         //return true if the transaction was commited
         return "commited".equals(result);
     }
 
-    public static void twoPhaseCommitTest() {
+    public static void threePhaseCommitTest() {
         Participant participant = new Participant();
 
-        boolean result = participant.performTwoPhaseCommit();
+        boolean result = participant.performThreePhaseCommit();
 
         if (result) {
             System.out.println("Transaction was commited.");
@@ -80,42 +80,60 @@ public class Participant {
         @CacheEntryRemoved
         public synchronized void addSitesDecision(CacheEntryEvent e) {
             switch ((String) e.getKey()) {
+                
                 case "request": {
-                    if ("canCommit?".equals((String) e.getValue())) {
-                        decideAndReportTransactionDecision();
+                    String request = (String) e.getValue();
+                    switch(request) {
+                        case "canCommit?": {
+                            String decision = null;
+                            if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
+                                decision = "Yes";
+									lock = LockFileDemo.lockFile();
+                            } else {
+                                decision = "No";
+                            }
+                            sitesCache.put(sitesCache.getCacheManager().getAddress(), decision);
+                            
+                            break;
+                        }
+                        case "preCommit": {
+                            //acknowledge transaction decision
+                            sitesCache.put(sitesCache.getCacheManager().getAddress(), "ACK");
+                            break;
+                        }
                     }
                     break;
                 }
+                
                 case "decision": {
-                    //set result
-                    result = (String) e.getValue();
+                    String decision = (String) e.getValue();
                     
-                    //notify the participant of the result
+                    switch(decision) {
+                        case "doCommit": {
+                            result = "commited";
+                            sitesCache.put(sitesCache.getCacheManager().getAddress(), "haveCommited");
+                            break;
+                        }
+                        case "abort": {
+                            result = "aborted";
+                        }
+                    }
+                    
+                    //notify participant of the result
                     synchronized (mutex) {
                         mutex.notify();
                     }
 
                     //released locked resources
                     if (lock != null) {
-                        LockFileDemo.releaseLock(lock);
+                       LockFileDemo.releaseLock(lock);
                     }
                 }
             }
         }
-        
-        private void decideAndReportTransactionDecision() {
-            String decision = null;
-            if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
-                decision = "commit";
-                lock = LockFileDemo.lockFile();
-            } else {
-                decision = "abort";
-            }
-            sitesCache.put(sitesCache.getCacheManager().getAddress(), decision);
-        }
     }
     
     public static void main(String[] argc) {
-        twoPhaseCommitTest();
+        threePhaseCommitTest();
     }
 }

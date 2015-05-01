@@ -18,23 +18,28 @@ import org.apache.zookeeper.KeeperException;
 
 public class LockFileDemo {
     
-    private enum TransactionDecision {
+    public enum TransactionDecision {
         commit, abort
     };
     
+    //path to the locked file
     private static final String FILE_PATH = "/home/simon/Desktop/";
+    //name of the locked file
     private static final String FILE_NAME = "file.txt";
-    private static final String TRANSACTION_DECISION = TransactionDecision.commit.name();
+    //file to lock
+    private static final File LOCK_FILE = new File(FILE_PATH, FILE_NAME);
     
-    private static final File lockFile = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
+    private static FileLock fileLock = null;
     
+    //site's decision in transaction
+    private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
     public static void main(String[] args) {
         try {
             //uncommited the test you want to run
-            siteTest(args);
-//            coordinatorTest(args);
+//            siteTest(args);
+            coordinatorTest(args);
         } catch (InterruptedException ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         } catch (KeeperException ex) {
@@ -44,32 +49,45 @@ public class LockFileDemo {
         }
     }
     
-    public static FileLock lockFile() throws IOException, InterruptedException {
+    /**
+     * Lock the file LOCK_FILE if possible, otherwise exit with error
+     * @throws IOException
+     * @throws InterruptedException 
+     */
+    public static void lockFile() throws IOException, InterruptedException {
         // This will create the file if it doesn't exit.
-        file = new RandomAccessFile(lockFile, "rw");
-        FileChannel f = file.getChannel();
+        file = new RandomAccessFile(LOCK_FILE, "rw");
+        FileChannel fileChannel = file.getChannel();
 
-        FileLock lock = f.tryLock();
+        FileLock lock = fileChannel.tryLock();
 
         if (lock == null || !lock.isValid()) {
             System.out.println("Lock for file " + file + " cannot be applied.");
             System.exit(1);
         }
-        return lock;
+        fileLock = lock;
     }
     
-    public static void releaseLock(FileLock lock) throws IOException  {
-        if (lock != null && lock.isValid()) {
-            lock.release();
+    /**
+     * Release the lock 'lock' and close the file 'file'
+     * @throws IOException 
+     */
+    public static void releaseLock() throws IOException  {
+        if (fileLock != null && fileLock.isValid()) {
+            fileLock.release();
         } else {
-            System.out.println("Lock " + lock + " is unvalid.");
+            System.out.println("Lock " + fileLock + " is unvalid.");
         }
         if (file != null) {
             file.close();
         }
     }
     
-    public static String decideTransaction() {
+    /** 
+     * Returns the site's transaction decision
+     * @return the site's decision to commit or abort
+     */
+    public static TransactionDecision decideTransaction() {
         return TRANSACTION_DECISION;
     }
 }

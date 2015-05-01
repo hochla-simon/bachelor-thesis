@@ -5,10 +5,10 @@
  */
 package cz.fi.muni.two_phase_commit;
 
+import cz.fi.muni.two_phase_commit.LockFileDemo.TransactionDecision;
 import static cz.fi.muni.two_phase_commit.SyncPrimitive.zk;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.channels.FileLock;
 import java.util.List;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -48,11 +48,10 @@ public class Site extends SyncPrimitive {
         waitForTransaction();
         
         //decide transaction and lock resources when agree with commit
-        FileLock lock = null;
         SyncPrimitive.Decision decision;
-        if ("commit".equals(LockFileDemo.decideTransaction())) {
+        if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
             decision = SyncPrimitive.Decision.commit;
-            lock = LockFileDemo.lockFile();
+            LockFileDemo.lockFile();
         } else {
             decision = SyncPrimitive.Decision.abort;
         }
@@ -64,7 +63,7 @@ public class Site extends SyncPrimitive {
         
         //release resources
         if (decision == SyncPrimitive.Decision.commit) {
-            LockFileDemo.releaseLock(lock);
+            LockFileDemo.releaseLock();
         }
         
         //return true if commited

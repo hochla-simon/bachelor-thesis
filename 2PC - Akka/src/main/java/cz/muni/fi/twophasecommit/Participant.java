@@ -5,7 +5,9 @@
  */
 package cz.muni.fi.twophasecommit;
 
+import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
+import com.typesafe.config.ConfigFactory;
 import cz.muni.fi.twophasecommit.LockFileDemo.TransactionDecision;
 import java.nio.channels.FileLock;
 
@@ -29,19 +31,20 @@ public class Participant extends UntypedActor{
                     Result result;
                     if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
                         result = Result.commit;
-                        lock = LockFileDemo.lockFile();
+//                        lock = LockFileDemo.lockFile();
                     } else {
                         result = Result.abort;
                     }
+                    System.out.println("Result from " + getSelf().path() + " is: " + result);
                     getSender().tell(result, getSelf());
                     break;
                 } case commit: {
-                    LockFileDemo.releaseLock(lock);
+//                    LockFileDemo.releaseLock(lock);
                     getContext().stop(getSelf());
                     break;
                 } case abort: {
                     if (lock != null) {
-                        LockFileDemo.releaseLock(lock);
+//                        LockFileDemo.releaseLock(lock);
                     }
                     getContext().stop(getSelf());
                     break;
@@ -50,5 +53,9 @@ public class Participant extends UntypedActor{
         } else {
             unhandled(msg);
         }
+    }
+	
+	public static void performTwoPhaseCommit() {
+        ActorSystem participantSystem = ActorSystem.create("2PCParticipantSystem", ConfigFactory.load("participant"));
     }
 }

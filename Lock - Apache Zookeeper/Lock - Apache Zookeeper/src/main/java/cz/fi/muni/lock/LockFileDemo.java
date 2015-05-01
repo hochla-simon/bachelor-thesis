@@ -26,19 +26,12 @@ public class LockFileDemo {
     public static void main(String[] args) {
         try {
             Lock lock = new Lock(args[0], "/_locknode_");
-            
             lock.lock();
-            
             FileLock fileLock = lockFile();
             Thread.sleep(5000);
             releaseLock(fileLock);
-            
             lock.unlock();
-        } catch (InterruptedException ex) {
-            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (KeeperException ex) {
-            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
+        } catch (InterruptedException | KeeperException | IOException ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -46,9 +39,9 @@ public class LockFileDemo {
     public static FileLock lockFile() throws IOException, InterruptedException {
         // This will create the file if it doesn't exit.
         file = new RandomAccessFile(lockFile, "rw");
-        FileChannel f = file.getChannel();
+        FileChannel fileChannel = file.getChannel();
 
-        FileLock lock = f.tryLock();
+        FileLock lock = fileChannel.tryLock();
 
         if (lock == null || !lock.isValid()) {
             System.out.println("Lock for file " + file + " cannot be applied.");

@@ -14,10 +14,10 @@ import java.util.List;
  */
 public class CoordinatorDemo {
     public static void main(String[] args) {
-//        List<String> paths = Arrays.asList("/user/p1", "/user/p2",
-//                "/user/p3");
-        List<String> paths = Arrays.asList("/user/p1");
-        
-        Coordinator.performTwoPhaseCommit(paths);
+		 List<String> paths = Arrays.asList("/user/p1", "/user/p2");
+		if (args.length == 0 || args[0].equals("participant"))
+			Participant.performTwoPhaseCommit();
+		if (args.length == 0 || args[0].equals("coordinator"))
+			Coordinator.performTwoPhaseCommit(paths);
     }
 }

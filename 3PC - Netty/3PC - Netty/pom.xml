@@ -18,5 +18,5 @@
             <type>jar</type>
         </dependency>
     </dependencies>
-    <name>Three-phaseCommit</name>
+    <name>ThreePhaseCommit</name>
 </project>

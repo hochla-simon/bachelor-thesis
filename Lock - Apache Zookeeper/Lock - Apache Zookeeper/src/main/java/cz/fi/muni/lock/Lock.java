@@ -5,7 +5,6 @@
  */
 package cz.fi.muni.lock;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.List;
 import org.apache.zookeeper.CreateMode;

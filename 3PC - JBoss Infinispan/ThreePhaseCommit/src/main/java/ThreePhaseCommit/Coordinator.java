@@ -1,4 +1,4 @@
-package TwoPhaseCommit;
+package ThreePhaseCommit;
 
 import java.io.IOException;
 import org.infinispan.Cache;
@@ -26,7 +26,7 @@ public class Coordinator {
     private static Integer mutex;
     private int sitesCount;
     
-    public boolean performTwoPhaseCommit() {
+    public boolean performThreePhaseCommit() {
        //create cache manager
        EmbeddedCacheManager embeddedCacheManager = null;
        try {
@@ -42,13 +42,14 @@ public class Coordinator {
        //perform sitesCache initialization and get the sites count
        sitesCount = initializeSitesCache(sitesCache);
        
+       //forward initial request to all sites
        coordinatorCache.put("request", "canCommit?");
        
        //create listener for the sitesCache
        SiteVotesListener siteVotesListener = new SiteVotesListener();
        sitesCache.addListener(siteVotesListener);
        
-       //initialize synchronization primtiive for result change
+       //initialize synchronization primitive for the result change
        mutex = new Integer(-1);
         
        //wait for being notified of the result change
@@ -81,9 +82,9 @@ public class Coordinator {
        return members.size() - 1;
    }
    
-   public static void twoPhaseCommitTest() {
+   public static void threePhaseCommitTest() {
        Coordinator coordinator = new Coordinator();
-       boolean result = coordinator.performTwoPhaseCommit();
+       boolean result = coordinator.performThreePhaseCommit();
 
        if (result) {
            System.out.println("Transaction was commited.");
@@ -95,38 +96,59 @@ public class Coordinator {
     @Listener
     @SuppressWarnings("unused")
     private class SiteVotesListener {
-        private final Set<Address> commitedSites = Collections.synchronizedSet(new HashSet<Address>());
+        private final Set<Address> canCommitSites = Collections.synchronizedSet(new HashSet<Address>());
+        private final Set<Address> acknowledgedSites = Collections.synchronizedSet(new HashSet<Address>());
+        private final Set<Address> haveCommitedSites = Collections.synchronizedSet(new HashSet<Address>());
+
         
         @CacheEntryCreated
         @CacheEntryModified
         @CacheEntryRemoved
         public synchronized void addSitesDecision(CacheEntryEvent e) {
             switch((String) e.getValue()) {
-                case "commit": {
-                    commitedSites.add((Address) e.getKey());
-                    if (commitedSites.size() == sitesCount) {
-                        reportTransactionDecision("commited");
+                case "Yes": {
+                    canCommitSites.add((Address) e.getKey());
+                    if (canCommitSites.size() == sitesCount) {
+                        coordinatorCache.put("request", "preCommit");
                     }
                     break;
                 }
-                case "abort": {
-                     reportTransactionDecision("aborted");
+                case "No": {
+                    coordinatorCache.put("decision", "abort");
+                    result = "aborted";
+
+                    //notify the coordinator of the result
+                    synchronized (mutex) {
+                        mutex.notify();
+                    }
+                    break;
+                }
+                case "ACK": {
+                    acknowledgedSites.add((Address) e.getKey());
+                    if (acknowledgedSites.size() == sitesCount) {
+                        coordinatorCache.put("decision", "doCommit");
+                        result = "commited";
+
+                        //notify the coordinator of the result
+                        synchronized (mutex) {
+                            mutex.notify();
+                        }
+                    }
+                    break;
+                }
+                case "haveCommited": {
+                    haveCommitedSites.add((Address) e.getKey());
+                    if (haveCommitedSites.size() == sitesCount) {
+                        //TODO
+                    }
+                    break;
                 }
             }
         }
-        
-        private void reportTransactionDecision(String decision) {
-            coordinatorCache.put("decision", decision);
-            result = decision;
-            //notify the coordinator of the result
-            synchronized (mutex) {
-                mutex.notify();
-            }
-        }
     }
-    
+
     public static void main(String[] argc) {
-        twoPhaseCommitTest();
+        threePhaseCommitTest();
     }
 }
 
