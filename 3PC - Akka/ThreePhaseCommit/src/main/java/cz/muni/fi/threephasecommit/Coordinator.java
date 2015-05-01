@@ -11,6 +11,7 @@ import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.routing.BroadcastGroup;
+import com.typesafe.config.ConfigFactory;
 import cz.muni.fi.threephasecommit.Participant.Decision;
 import java.util.HashSet;
 import java.util.List;
@@ -93,27 +94,26 @@ public class Coordinator extends UntypedActor {
         }
     }
     
-    public static void performTwoPhaseCommit(final List<String> paths) {
-        
+    public static void performThreePhaseCommit(final List<String> paths) {
+
         // Create an Akka system
-        ActorSystem system = ActorSystem.create("2PCSystem");
+        ActorSystem coordinatorSystem = ActorSystem.create("3PCCoordinatorSystem", ConfigFactory.load("coordinator"));
 
         // create the result listener, which will print the result and shutdown the system
-        final ActorRef listener = system.actorOf(Props.create(Listener.class), "listener");
+        final ActorRef coordinatorListener = coordinatorSystem.actorOf(Props.create(Listener.class), "listener");
 
         //create participants
-        ActorRef participant1 = system.actorOf(Props.create(Participant.class), "p1");
-//        ActorRef participant2 = system.actorOf(Props.create(Participant.class), "p2");
-//        ActorRef participant3  = system.actorOf(Props.create(Participant.class), "p3");
-        
+        ActorRef participant1 = coordinatorSystem.actorOf(Props.create(Participant.class), "p1");
+        ActorRef participant2 = coordinatorSystem.actorOf(Props.create(Participant.class), "p2");
+
         // create the master
-        ActorRef coordinator = system.actorOf(Props.create(new UntypedActorFactory() {
+        ActorRef coordinator = coordinatorSystem.actorOf(Props.create(new UntypedActorFactory() {
             public UntypedActor create() {
-                return new Coordinator(paths, listener);
+                return new Coordinator(paths, coordinatorListener);
             }
         }), "coordinator");
-        
-//        system.actorOf(Props.create(Terminator.class, participant1), "terminator");
-        system.actorOf(Props.create(Terminator.class, coordinator), "terminator2");
+
+        // system.actorOf(Props.create(Terminator.class, participant1), "terminator");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, coordinator), "terminator2");
     }
 }

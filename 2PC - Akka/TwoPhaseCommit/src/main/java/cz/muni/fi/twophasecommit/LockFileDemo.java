@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,13 +22,23 @@ public class LockFileDemo {
         commit, abort
     };
     
-    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop";
+    private static final String FILE_PATH = "/home/xhochla/Bakalarka";
     private static final String FILE_NAME = "file.txt";
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
     private static final File lockFile = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
     
+    public static void main(String[] args) {
+        List<String> paths = Arrays.asList("/user/p1", "/user/p2");
+        if (args.length == 0 || args[0].equals("participant")) {
+            Participant.performTwoPhaseCommit();
+        }
+        if (args.length == 0 || args[0].equals("coordinator")) {
+            Coordinator.performTwoPhaseCommit(paths);
+        }
+    }
+	
     public static FileLock lockFile() {
         try {
             // This will create the file if it doesn't exit.

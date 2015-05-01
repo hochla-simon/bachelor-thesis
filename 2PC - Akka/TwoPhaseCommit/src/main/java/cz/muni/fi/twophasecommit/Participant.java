@@ -31,7 +31,7 @@ public class Participant extends UntypedActor{
                     Result result;
                     if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
                         result = Result.commit;
-//                        lock = LockFileDemo.lockFile();
+                        lock = LockFileDemo.lockFile();
                     } else {
                         result = Result.abort;
                     }
@@ -39,12 +39,12 @@ public class Participant extends UntypedActor{
                     getSender().tell(result, getSelf());
                     break;
                 } case commit: {
-//                    LockFileDemo.releaseLock(lock);
+                    LockFileDemo.releaseLock(lock);
                     getContext().stop(getSelf());
                     break;
                 } case abort: {
                     if (lock != null) {
-//                        LockFileDemo.releaseLock(lock);
+                        LockFileDemo.releaseLock(lock);
                     }
                     getContext().stop(getSelf());
                     break;
@@ -55,7 +55,7 @@ public class Participant extends UntypedActor{
         }
     }
 	
-	public static void performTwoPhaseCommit() {
+    public static void performTwoPhaseCommit() {
         ActorSystem participantSystem = ActorSystem.create("2PCParticipantSystem", ConfigFactory.load("participant"));
     }
 }

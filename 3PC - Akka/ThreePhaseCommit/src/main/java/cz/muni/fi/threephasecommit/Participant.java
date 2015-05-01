@@ -5,7 +5,9 @@
  */
 package cz.muni.fi.threephasecommit;
 
+import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
+import com.typesafe.config.ConfigFactory;
 import cz.muni.fi.threephasecommit.LockFileDemo.TransactionDecision;
 import java.nio.channels.FileLock;
 
@@ -53,5 +55,9 @@ public class Participant extends UntypedActor{
         } else {
             unhandled(msg);
         }
+    }
+    
+    public static void performThreePhaseCommit() {
+        ActorSystem participantSystem = ActorSystem.create("3PCParticipantSystem", ConfigFactory.load("participant"));
     }
 }
