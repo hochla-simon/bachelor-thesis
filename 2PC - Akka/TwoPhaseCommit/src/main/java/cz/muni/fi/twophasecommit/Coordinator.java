@@ -46,7 +46,7 @@ public class Coordinator extends UntypedActor {
     
     @Override
     public void preStart() {
-            workerRouter.tell(Request.canCommit, getSelf());
+        workerRouter.tell(Request.canCommit, getSelf());
     }
     
     @Override
@@ -86,7 +86,6 @@ public class Coordinator extends UntypedActor {
         //create participants
         ActorRef participant1 = coordinatorSystem.actorOf(Props.create(Participant.class), "p1");
         ActorRef participant2 = coordinatorSystem.actorOf(Props.create(Participant.class), "p2");
-        ActorRef participant3 = coordinatorSystem.actorOf(Props.create(Participant.class), "p3");
         
         // create the master
         ActorRef coordinator = coordinatorSystem.actorOf(Props.create(new UntypedActorFactory() {
@@ -95,7 +94,8 @@ public class Coordinator extends UntypedActor {
             }
         }), "coordinator");
         
-	     // system.actorOf(Props.create(Terminator.class, participant1), "terminator");
-        coordinatorSystem.actorOf(Props.create(Terminator.class, coordinator), "terminator2");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, coordinator), "coordinatorTerminator");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, participant1), "participant1Terminator");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, participant1), "participant2Terminator");
     }
 }

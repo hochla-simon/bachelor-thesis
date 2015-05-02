@@ -113,7 +113,8 @@ public class Coordinator extends UntypedActor {
             }
         }), "coordinator");
 
-        // system.actorOf(Props.create(Terminator.class, participant1), "terminator");
-        coordinatorSystem.actorOf(Props.create(Terminator.class, coordinator), "terminator2");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, coordinator), "coordinatorTerminator");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, participant1), "participant1Terminator");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, participant1), "participant2Terminator");
     }
 }
