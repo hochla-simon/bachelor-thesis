@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.leaderelection.coordinator;
+package cz.muni.fi.netty.lock.coordinator;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -21,7 +21,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import static cz.muni.fi.netty.leaderelection.coordinator.CoordinatorDemo.SITES_COUNT;
+import static cz.muni.fi.netty.lock.coordinator.CoordinatorDemo.SITES_COUNT;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.util.Collections;
 import java.util.Map;
@@ -33,9 +33,6 @@ import java.util.TreeMap;
 @Sharable
 public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
 
-    /**
-     * Channels is the group of participants communicating with the coordinator
-     */
     private static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
         
     @Override
@@ -49,7 +46,8 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
             }
             String minId = Collections.min(channelIds.keySet());
             Channel channelWithMinId = channelIds.get(minId);
-            channelWithMinId.writeAndFlush("Your are the leader now.\r\n");
+            channelWithMinId.writeAndFlush("canLock\r\n");
+            
             for (Channel c : channels) {
                 if (c != channelWithMinId) {
                     c.writeAndFlush("Current leader is leader with ID: " + minId + "\r\n");

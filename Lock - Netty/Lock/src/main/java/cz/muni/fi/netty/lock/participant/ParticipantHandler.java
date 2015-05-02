@@ -13,12 +13,17 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.leaderelection.participant;
+package cz.muni.fi.netty.lock.participant;
 
+import static cz.muni.fi.netty.lock.participant.LockFileDemo.lockFile;
+import static cz.muni.fi.netty.lock.participant.LockFileDemo.releaseLock;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
+import java.nio.channels.FileLock;
 
 /**
  * Handles a client-side channel.
@@ -26,13 +31,16 @@ import java.io.IOException;
 @Sharable
 public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
     
+    private FileLock lock = null;
     
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws IOException, InterruptedException {
         
-        if (msg.equals("Your are the leader now.")) {
+        if (msg.equals("canLock")) {
             leaderProcedure();
-            ctx.writeAndFlush("finished\r\n");
+            ChannelFuture future = ctx.writeAndFlush("finished\r\n");
+            future.addListener(ChannelFutureListener.CLOSE);
+
         } else {
             System.out.println(msg);
         }
@@ -45,10 +53,12 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
     }
     
     private void leaderProcedure() throws InterruptedException {
-        System.out.println("I am the leader now.");
+        System.out.println("I have acquired the lock.");
+        lockFile();
         System.out.println("Going to wait for 3 seconds...");
         Thread.sleep(3000);
         System.out.println("Done.");
-        System.out.println("Closing.");
+        releaseLock();
+        System.out.println("Releasing the lock.");
     }
 }

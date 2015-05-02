@@ -3,21 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.netty.leaderelection.coordinator;
+package cz.muni.fi.netty.leaderelection.participant;
 
 /**
  *
  * @author Simon
  */
-public class CoordinatorDemo {
-    /**
-     * Count of the participating electable sites
-     */
-     public static final int SITES_COUNT = 3;
-        
-     public static void main(String[] args) {
+public class ParticipantDemo {
+    public static void main(String[] args) {
         try {
-            Coordinator.run();
+            Participant.run();
         } catch (Exception e) {
             e.printStackTrace();
         }
