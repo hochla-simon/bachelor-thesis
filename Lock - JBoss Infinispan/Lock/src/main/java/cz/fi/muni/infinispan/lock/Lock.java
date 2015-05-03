@@ -12,9 +12,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.infinispan.commons.util.CloseableIteratorCollection;
 import org.infinispan.commons.util.CloseableIteratorSet;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
+import org.infinispan.notifications.cachemanagerlistener.annotation.ViewChanged;
+import org.infinispan.notifications.cachemanagerlistener.event.ViewChangedEvent;
 import org.infinispan.remoting.transport.Address;
 
 public class Lock {
@@ -83,7 +86,7 @@ public class Lock {
             embeddedCacheManager.stop();
         } else {
             LeaderAddressListener leaderAddressListener = new LeaderAddressListener();
-            leaderCache.addListener(leaderAddressListener);
+            embeddedCacheManager.addListener(leaderAddressListener);
         }
     }
 
@@ -115,7 +118,6 @@ public class Lock {
 
         electableMembersCache = embeddedCacheManager.getCache("electable members cache");
         leaderCache = embeddedCacheManager.getCache("leader cache");
-
         myAddress = electableMembersCache.getAdvancedCache().getRpcManager().getAddress();
     }
 
@@ -128,10 +130,35 @@ public class Lock {
 
         private final Set<Address> commitedSites = Collections.synchronizedSet(new HashSet<Address>());
 
-        @CacheEntryRemoved
-        public synchronized void leaderAddressRemoved(CacheEntryEvent e) {
+        @ViewChanged
+        public synchronized void leaderAddressRemoved(ViewChangedEvent e) {
             CloseableIteratorSet<Integer> keySet = electableMembersCache.keySet();
+            CloseableIteratorCollection<Address> values = electableMembersCache.values();
 
+            List<Address> newMembers = e.getNewMembers();
+            List<Address> oldMembers = e.getOldMembers();
+
+            //copying oldMembers to a new mutable list
+            List<Address> disconnectedMembers = new ArrayList<>();
+            for (Address address : oldMembers) {
+                disconnectedMembers.add(address);
+            }
+
+            //disconnectedMembers will contain only the nodes, which have been removed in this view change
+            disconnectedMembers.removeAll(newMembers);
+
+            //removing the disconnected nodes from the electableMembersCache
+            for (Address disconnectedNode : disconnectedMembers) {
+                if (values.contains(disconnectedNode)) {
+                    for (Integer nodeId : keySet) {
+                        if (disconnectedNode.equals(electableMembersCache.get(nodeId))) {
+                            electableMembersCache.remove(nodeId);
+                        }
+                    }
+                }
+            }
+
+            //get the minimal index from electableMembersCache to determine the new leader
             Integer minIndex;
             if (!keySet.isEmpty()) {
                 List<Integer> memberIndexes = new ArrayList<>();
@@ -143,6 +170,7 @@ public class Lock {
                 minIndex = - 1;
             }
 
+            //if my index is the minimal index, I will become the leader
             if (minIndex.equals(myIndex)) {
                 lock();
                 try {
