@@ -24,13 +24,13 @@ public class LockFileDemo {
     private static final String FILE_NAME = "file.txt";
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
-    private static final File lockFile = new File(FILE_PATH, FILE_NAME);
+    private static final File LOCK_FILE = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
     
     public static FileLock lockFile() {
         try {
             // This will create the file if it doesn't exit.
-            file = new RandomAccessFile(lockFile, "rw");
+            file = new RandomAccessFile(LOCK_FILE, "rw");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }

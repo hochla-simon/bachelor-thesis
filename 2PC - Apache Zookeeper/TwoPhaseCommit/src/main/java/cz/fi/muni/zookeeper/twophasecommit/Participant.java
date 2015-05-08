@@ -9,6 +9,7 @@ import cz.fi.muni.zookeeper.twophasecommit.LockFileDemo.TransactionDecision;
 import static cz.fi.muni.zookeeper.twophasecommit.SyncPrimitive.zk;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.channels.FileLock;
 import java.util.List;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -21,14 +22,19 @@ import org.apache.zookeeper.data.Stat;
  */
 public class Participant extends SyncPrimitive {
 
-    int size;
-    String sitePath = null;
-    String transaction;
+    private final int size;
+    private String sitePath;
+    private String transaction;
+    private FileLock lock;
 
     Participant(String address, String root, int size) throws Exception {
         super(address);
         this.root = root;
         this.size = size;
+        
+        this.sitePath = null;
+        this.transaction = null;
+        this.lock = null;
 
         if (zk != null) {
             Stat s = zk.exists(root, false);
@@ -55,7 +61,7 @@ public class Participant extends SyncPrimitive {
         SyncPrimitive.Decision decision;
         if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
             decision = SyncPrimitive.Decision.commit;
-            LockFileDemo.lockFile();
+            lock = LockFileDemo.lockFile();
         } else {
             decision = SyncPrimitive.Decision.abort;
         }
@@ -63,8 +69,8 @@ public class Participant extends SyncPrimitive {
         SyncPrimitive.Decision result = getResult();
 
         //release resources
-        if (decision == SyncPrimitive.Decision.commit) {
-            LockFileDemo.releaseLock();
+        if (lock != null) {
+            LockFileDemo.releaseLock(lock);
         }
         
         sendAcknowledgement();

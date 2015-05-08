@@ -29,7 +29,6 @@ public class LockFileDemo {
     private static final File LOCK_FILE = new File(FILE_PATH, FILE_NAME);
     
     private static RandomAccessFile file = null;
-    private static FileLock fileLock = null;
     
     //site's decision in transaction
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
@@ -73,7 +72,7 @@ public class LockFileDemo {
      * @throws IOException
      * @throws InterruptedException 
      */
-    public static void lockFile() throws IOException, InterruptedException {
+    public static FileLock lockFile() throws IOException, InterruptedException {
         // This will create the file if it doesn't exit.
         file = new RandomAccessFile(LOCK_FILE, "rw");
         FileChannel fileChannel = file.getChannel();
@@ -84,14 +83,14 @@ public class LockFileDemo {
             System.out.println("Lock for file " + file + " cannot be applied.");
             System.exit(1);
         }
-        fileLock = lock;
+        return lock;
     }
     
     /**
      * Release the lock 'lock' and close the file 'file'
      * @throws IOException 
      */
-    public static void releaseLock() throws IOException  {
+    public static void releaseLock(FileLock fileLock) throws IOException  {
         if (fileLock != null && fileLock.isValid()) {
             fileLock.release();
         } else {

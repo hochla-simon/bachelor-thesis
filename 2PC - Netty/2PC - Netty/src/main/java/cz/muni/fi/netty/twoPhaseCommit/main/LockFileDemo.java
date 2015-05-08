@@ -24,7 +24,7 @@ public class LockFileDemo {
     private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop\\";
     private static final String FILE_NAME = "file.txt";
         
-    private static final File lockFile = new File(FILE_PATH, FILE_NAME);
+    private static final File LOCK_FILE = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
     
     public static final int SITES_COUNT = 2;
@@ -57,7 +57,7 @@ public class LockFileDemo {
     
     public static FileLock lockFile() throws IOException, InterruptedException {
         // This will create the file if it doesn't exit.
-        file = new RandomAccessFile(lockFile, "rw");
+        file = new RandomAccessFile(LOCK_FILE, "rw");
         FileChannel f = file.getChannel();
 
         FileLock lock = f.tryLock();
