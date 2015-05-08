@@ -3,13 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.two_phase_commit;
+package cz.fi.muni.zookeeper.twophasecommit;
 
-import static cz.fi.muni.two_phase_commit.Coordinator.coordinatorTest;
-import static cz.fi.muni.two_phase_commit.Site.siteTest;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.logging.Level;
@@ -35,14 +34,34 @@ public class LockFileDemo {
     //site's decision in transaction
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
+    //transaction to be performed on the participant
+    private static final String TRANSACTION = "transactionToPerform";
+    
+    private static final String HOST = "127.0.0.1";
+    private static final int PORT = 2181;
+    
+    private static final int SITES_COUNT = 2;
+    
     public static void main(String[] args) {
         try {
-            //uncommited the test you want to run
-//            siteTest(args);
-            coordinatorTest(args);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (KeeperException ex) {
+            if (args.length != 1) {
+                System.out.println("Wrong count of parameters: "
+                        + "run either with 'participant' or 'coordinator' as argument");
+                System.exit(0);
+            }
+            switch (args[0]) {
+                case "participant":
+                    Participant.run(HOST, PORT, SITES_COUNT);
+                    break;
+                case "coordinator":
+                    Coordinator.run(HOST, PORT, SITES_COUNT, TRANSACTION);
+                    break;
+                default:
+                    System.out.println("Wrong type of argument: "
+                            + "run either with 'participant' or 'coordinator' as argument");
+                    System.exit(0);
+            }
+        } catch (InterruptedException | KeeperException | UnsupportedEncodingException ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         } catch (Exception ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.twophasecommit;
+package cz.muni.fi.akka.twophasecommit;
 
 import akka.actor.UntypedActor;
 
@@ -13,6 +13,10 @@ import akka.actor.UntypedActor;
  */
 public class Listener extends UntypedActor {
 
+    /**
+     * Print the received message and shutdown the system.
+     * @param message received message
+     */
     public void onReceive(Object message) {
         if (message instanceof String) {
             String result = (String) message;

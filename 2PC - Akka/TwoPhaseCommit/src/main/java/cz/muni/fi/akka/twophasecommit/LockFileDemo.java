@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.twophasecommit;
+package cz.muni.fi.akka.twophasecommit;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ *
+ * @author Simon
+ */
 public class LockFileDemo {
     
     public enum TransactionDecision {
@@ -24,18 +28,28 @@ public class LockFileDemo {
     
     private static final String FILE_PATH = "/home/xhochla/Bakalarka";
     private static final String FILE_NAME = "file.txt";
-    private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
     private static final File lockFile = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
     
+    private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
+
     public static void main(String[] args) {
-        List<String> paths = Arrays.asList("/user/p1", "/user/p2");
-        if (args.length == 0 || args[0].equals("participant")) {
-            Participant.performTwoPhaseCommit();
+        if (args.length != 1) {
+            System.out.println("Wrong count of parameters: "
+                    + "run either with 'participant' or 'coordinator' as argument.");
+            System.exit(0);
         }
-        if (args.length == 0 || args[0].equals("coordinator")) {
-            Coordinator.performTwoPhaseCommit(paths);
+        List<String> paths = Arrays.asList("/user/p1", "/user/p2");
+        
+        if (args[0].equals("participant")) {
+            Participant.run();
+        } else if (args[0].equals("coordinator")) {
+            Coordinator.run(paths);
+        } else {
+            System.out.println("Wrong type of argument: "
+                    + "run either with 'participant' or 'coordinator' as argument.");
+            System.exit(0);
         }
     }
 	

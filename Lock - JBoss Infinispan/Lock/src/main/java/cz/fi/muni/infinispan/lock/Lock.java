@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import org.infinispan.Cache;
 import org.infinispan.notifications.Listener;
-import org.infinispan.notifications.cachelistener.annotation.CacheEntryRemoved;
-import org.infinispan.notifications.cachelistener.event.CacheEntryEvent;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -192,7 +190,7 @@ public class Lock {
      * @throws InterruptedException
      */
     private void performFileLocking() throws InterruptedException {
-        System.out.println("---I have acquired the lock.---");;
+        System.out.println("---I have acquired the lock.---");
         System.out.println("---Going to wait for ten seconds...---");
         LockFileDemo.lockFile();
         Thread.sleep(10000);

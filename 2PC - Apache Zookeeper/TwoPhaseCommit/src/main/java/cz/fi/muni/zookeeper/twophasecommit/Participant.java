@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.two_phase_commit;
+package cz.fi.muni.zookeeper.twophasecommit;
 
-import cz.fi.muni.two_phase_commit.LockFileDemo.TransactionDecision;
-import static cz.fi.muni.two_phase_commit.SyncPrimitive.zk;
+import cz.fi.muni.zookeeper.twophasecommit.LockFileDemo.TransactionDecision;
+import static cz.fi.muni.zookeeper.twophasecommit.SyncPrimitive.zk;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
@@ -19,13 +19,13 @@ import org.apache.zookeeper.data.Stat;
  *
  * @author simon
  */
-public class Site extends SyncPrimitive {
+public class Participant extends SyncPrimitive {
 
     int size;
     String sitePath = null;
     String transaction;
 
-    Site(String address, String root, int size) throws Exception {
+    Participant(String address, String root, int size) throws Exception {
         super(address);
         this.root = root;
         this.size = size;
@@ -38,13 +38,17 @@ public class Site extends SyncPrimitive {
         }
     }
 
+    /**
+     * Perform the two phase commit and return the result.
+     * @return true when the transaction has been commited, false otherwise
+     * @throws KeeperException
+     * @throws InterruptedException
+     * @throws UnsupportedEncodingException
+     * @throws IOException 
+     */
     boolean enter() throws KeeperException, InterruptedException, UnsupportedEncodingException, IOException {
-        //create the given site node under the root element
         createSiteNode();
-        //wait for other sites to enter
         waitForAllSites();
-        //wait for the coordinator to write the transaction string to the root node
-        //and put it to the transaction variable
         waitForTransaction();
         
         //decide transaction and lock resources when agree with commit
@@ -55,16 +59,15 @@ public class Site extends SyncPrimitive {
         } else {
             decision = SyncPrimitive.Decision.abort;
         }
-        
-        //write decision as data of the site node
         voteForCommit(decision);
-        //get final result
         SyncPrimitive.Decision result = getResult();
-        
+
         //release resources
         if (decision == SyncPrimitive.Decision.commit) {
             LockFileDemo.releaseLock();
         }
+        
+        sendAcknowledgement();
         
         //return true if commited
         switch (result) {
@@ -76,12 +79,21 @@ public class Site extends SyncPrimitive {
                 return false;
         }
     }
-
+    /**
+     * Create the given site node under the root element
+     * @throws KeeperException
+     * @throws InterruptedException 
+     */
     private void createSiteNode() throws KeeperException, InterruptedException {
         sitePath = zk.create(root + "/s_", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL_SEQUENTIAL);
     }
-
+    
+    /**
+     * Wait for other sites to enter.
+     * @throws KeeperException
+     * @throws InterruptedException 
+     */
     private void waitForAllSites() throws KeeperException, InterruptedException {
         while (true) {
             synchronized (mutex) {
@@ -96,6 +108,18 @@ public class Site extends SyncPrimitive {
         }
     }
 
+    private void sendAcknowledgement() throws KeeperException, InterruptedException {
+        byte[] data = "ACK".getBytes();
+        zk.setData(sitePath, data, -1);
+    }
+    
+    /**
+     * Wait for the coordinator to write the transaction string to the root node
+     * and put it to the transaction variable.
+     * @throws UnsupportedEncodingException
+     * @throws KeeperException
+     * @throws InterruptedException 
+     */
     private void waitForTransaction() throws UnsupportedEncodingException, KeeperException, InterruptedException {
         Stat stat = new Stat();
         while (true) {
@@ -110,6 +134,12 @@ public class Site extends SyncPrimitive {
         }
     }
 
+    /**
+     * Write decision as data of the respective site node.
+     * @param decision Decision to commit or abort.
+     * @throws KeeperException
+     * @throws InterruptedException 
+     */
     public void voteForCommit(SyncPrimitive.Decision decision) throws KeeperException, InterruptedException {
         byte[] data;
         if (decision == SyncPrimitive.Decision.commit) {
@@ -120,6 +150,13 @@ public class Site extends SyncPrimitive {
         zk.setData(sitePath, data, -1);
     }
 
+    /**
+     * Wait for the coordinator to decide the transaction and return the result.
+     * @return result of the transaction
+     * @throws UnsupportedEncodingException
+     * @throws KeeperException
+     * @throws InterruptedException 
+     */
     private SyncPrimitive.Decision getResult() throws UnsupportedEncodingException, KeeperException, InterruptedException {
         SyncPrimitive.Decision decision;
         Stat stat = new Stat();
@@ -127,19 +164,25 @@ public class Site extends SyncPrimitive {
             synchronized (mutex) {
                 byte[] data = zk.getData(root, true, stat);
                 String result = new String(data, "UTF-8");
-                if (result.equals("commit")) {
-                    decision = SyncPrimitive.Decision.commit;
-                    return decision;
-                } else if (result.equals("abort")) {
-                    decision = SyncPrimitive.Decision.abort;
-                    return decision;
+                switch (result) {
+                    case "commit":
+                        decision = SyncPrimitive.Decision.commit;
+                        return decision;
+                    case "abort":
+                        decision = SyncPrimitive.Decision.abort;
+                        return decision;
                 }
                 mutex.wait();
             }
         }
     }
 
-    boolean leave() throws KeeperException, InterruptedException {
+    /**
+     * Delete the respective site node and wait for all siblings to be deleted.
+     * @throws KeeperException
+     * @throws InterruptedException 
+     */
+    void leave() throws KeeperException, InterruptedException {
         zk.delete(sitePath, -1);
         while (true) {
             synchronized (mutex) {
@@ -147,18 +190,30 @@ public class Site extends SyncPrimitive {
                 if (list.size() > 0) {
                     mutex.wait();
                 } else {
-                    return true;
+                    return;
                 }
             }
         }
     }
     
-   
+    /**
+     * Join to the two phase commit, print whether the transaction was commited
+     * or aborted and than release the used Zookeeper resources.
+     *
+     * @param host IP address of the server Zookeeper client is connected to
+     * @param port port Zookeeper client is operating on
+     * @param sitesCount Count of the sites participating in the two phase
+     * commit
+     * @throws InterruptedException
+     * @throws KeeperException
+     * @throws Exception
+     */
+    public static void run(String host, int port, int sitesCount)
+            throws UnsupportedEncodingException, InterruptedException, KeeperException, Exception {
+        String address = host + ":" + port;
+        Participant participant = new Participant(address, "/Tx", new Integer(sitesCount));
 
-    public static void siteTest(String args[]) throws UnsupportedEncodingException, InterruptedException, KeeperException, Exception {
-        Site site = new Site(args[0], "/Tx", new Integer(args[1]));
-
-        boolean result = site.enter();
+        boolean result = participant.enter();
 
         if (result) {
             System.out.println("Transaction was commited.");
@@ -166,6 +221,6 @@ public class Site extends SyncPrimitive {
             System.out.println("Transaction was aborted.");
         }
 
-        site.leave();
+        participant.leave();
     }
 }

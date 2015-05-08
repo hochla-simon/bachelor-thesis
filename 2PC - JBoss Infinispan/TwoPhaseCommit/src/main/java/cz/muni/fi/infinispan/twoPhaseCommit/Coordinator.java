@@ -1,11 +1,9 @@
-package TwoPhaseCommit;
+package cz.muni.fi.infinispan.twoPhaseCommit;
 
 import java.io.IOException;
 import org.infinispan.Cache;
 import org.infinispan.notifications.Listener;
-import org.infinispan.notifications.cachelistener.annotation.CacheEntryCreated;
 import org.infinispan.notifications.cachelistener.annotation.CacheEntryModified;
-import org.infinispan.notifications.cachelistener.annotation.CacheEntryRemoved;
 import org.infinispan.notifications.cachelistener.event.CacheEntryEvent;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,6 +24,10 @@ public class Coordinator {
     private static Integer mutex;
     private int sitesCount;
     
+    /**
+     * Performs the two phase phase commit over the group of connected participants.
+     * @return true if the transaction was commited, false otherwise
+     */
     public boolean performTwoPhaseCommit() {
        //create cache manager
        EmbeddedCacheManager embeddedCacheManager = null;
@@ -81,7 +83,10 @@ public class Coordinator {
        return members.size() - 1;
    }
    
-   public static void twoPhaseCommitTest() {
+   /**
+    * Perform the two phase commit and print the result of the transaction
+    */
+   public static void run() {
        Coordinator coordinator = new Coordinator();
        boolean result = coordinator.performTwoPhaseCommit();
 
@@ -92,14 +97,28 @@ public class Coordinator {
        }
    }
    
+    /**
+     * Listener for a change of the site's cache.
+     */
     @Listener
     @SuppressWarnings("unused")
     private class SiteVotesListener {
+        /**
+         * Set of unique addresses of participants which have already commited.
+         */
         private final Set<Address> commitedSites = Collections.synchronizedSet(new HashSet<Address>());
         
-        @CacheEntryCreated
+        /**
+         * Set of unique addresses of participants which have acknowledged receiving the transaction result.
+         */
+        private final Set<Address> acknowledgedSites = Collections.synchronizedSet(new HashSet<Address>());
+        
+        
+        /**
+         * Method triggered on a modification of a site's cache entry.
+         * @param e object containing information about the event that happened
+         */
         @CacheEntryModified
-        @CacheEntryRemoved
         public synchronized void addSitesDecision(CacheEntryEvent e) {
             switch((String) e.getValue()) {
                 case "commit": {
@@ -111,22 +130,30 @@ public class Coordinator {
                 }
                 case "abort": {
                      reportTransactionDecision("aborted");
+                     break;
+                }
+                case "ACK": {
+                    acknowledgedSites.add((Address) e.getKey());
+                    if (acknowledgedSites.size() == sitesCount) {
+                        //notify the coordinator of the result
+                        synchronized (mutex) {
+                            mutex.notify();
+                        }
+                    }
+                    break;
                 }
             }
         }
         
+        /**
+         * Put the transaction decision into the coordinator cache
+         * and set the result.
+         * @param decision 
+         */
         private void reportTransactionDecision(String decision) {
             coordinatorCache.put("decision", decision);
             result = decision;
-            //notify the coordinator of the result
-            synchronized (mutex) {
-                mutex.notify();
-            }
         }
-    }
-    
-    public static void main(String[] argc) {
-        twoPhaseCommitTest();
     }
 }
 

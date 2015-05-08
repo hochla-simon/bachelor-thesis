@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.twophasecommit;
+package cz.muni.fi.akka.twophasecommit;
 
 import akka.actor.ActorRef;
 import akka.actor.Terminated;

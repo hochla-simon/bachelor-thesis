@@ -3,12 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.twophasecommit;
+package cz.muni.fi.akka.twophasecommit;
 
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import com.typesafe.config.ConfigFactory;
-import cz.muni.fi.twophasecommit.LockFileDemo.TransactionDecision;
+import cz.muni.fi.akka.twophasecommit.LockFileDemo.TransactionDecision;
 import java.nio.channels.FileLock;
 
 /**
@@ -16,8 +16,8 @@ import java.nio.channels.FileLock;
  * @author Simon
  */
 public class Participant extends UntypedActor{
-    public static enum Result {
-        commit, abort
+    public static enum Decision {
+        commit, abort, ACK
     }
     
     private FileLock lock = null;
@@ -25,27 +25,34 @@ public class Participant extends UntypedActor{
     @Override
     public void onReceive(Object msg) {
         if (msg instanceof Coordinator.Request) {
-            Coordinator.Request request = (Coordinator.Request)msg;
+            Coordinator.Request request = (Coordinator.Request) msg;
             switch(request) {
                 case canCommit: {
-                    Result result;
+                    Decision decision;
                     if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
-                        result = Result.commit;
+                        decision = Decision.commit;
+                        //lock resources
                         lock = LockFileDemo.lockFile();
                     } else {
-                        result = Result.abort;
+                        decision = Decision.abort;
                     }
-                    System.out.println("Result from " + getSelf().path() + " is: " + result);
-                    getSender().tell(result, getSelf());
+                    System.out.println("Result from " + getSelf().path() + " is: " + decision);
+                    getSender().tell(decision, getSelf());
                     break;
                 } case commit: {
+                    //release locked resources
                     LockFileDemo.releaseLock(lock);
+                    //acknowledge having received the result
+                    getSender().tell("ACK", getSelf());
                     getContext().stop(getSelf());
                     break;
                 } case abort: {
+                    //release resources if they have been locked
                     if (lock != null) {
                         LockFileDemo.releaseLock(lock);
                     }
+                    //acknowledge having received the result
+                    getSender().tell("ACK", getSelf());
                     getContext().stop(getSelf());
                     break;
                 }
@@ -55,7 +62,10 @@ public class Participant extends UntypedActor{
         }
     }
 	
-    public static void performTwoPhaseCommit() {
-        ActorSystem participantSystem = ActorSystem.create("2PCParticipantSystem", ConfigFactory.load("participant"));
+    /**
+     * Create actor system for so that the coordinator could create participant actors in it remotely. 
+     */
+    public static void run() {
+        ActorSystem.create("2PCParticipantSystem", ConfigFactory.load("participant"));
     }
 }

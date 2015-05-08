@@ -26,6 +26,10 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 public final class Participant {
 
     static final boolean SSL = System.getProperty("ssl") != null;
+    
+    /**
+     * address of the coordinator to connect to
+     */
     static final String HOST = System.getProperty("host", "127.0.0.1");
     static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8992" : "8023"));
 

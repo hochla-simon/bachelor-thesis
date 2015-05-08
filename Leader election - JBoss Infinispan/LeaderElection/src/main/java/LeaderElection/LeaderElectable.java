@@ -173,7 +173,7 @@ public class LeaderElectable {
      * @throws InterruptedException
      */
     private void leaderProcedure() throws InterruptedException {
-        System.out.println("---I have acquired the leadership.---");;
+        System.out.println("---I have acquired the leadership.---");
         System.out.println("---Going to wait for ten seconds...---");
         Thread.sleep(10000);
         System.out.println("---Done.---");
