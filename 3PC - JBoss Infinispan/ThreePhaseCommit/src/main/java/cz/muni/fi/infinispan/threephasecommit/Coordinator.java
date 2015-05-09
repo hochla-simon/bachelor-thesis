@@ -1,11 +1,10 @@
-package ThreePhaseCommit;
+package cz.muni.fi.infinispan.threephasecommit;
 
 import java.io.IOException;
 import org.infinispan.Cache;
 import org.infinispan.notifications.Listener;
 import org.infinispan.notifications.cachelistener.annotation.CacheEntryCreated;
 import org.infinispan.notifications.cachelistener.annotation.CacheEntryModified;
-import org.infinispan.notifications.cachelistener.annotation.CacheEntryRemoved;
 import org.infinispan.notifications.cachelistener.event.CacheEntryEvent;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,6 +25,12 @@ public class Coordinator {
     private static Integer mutex;
     private int sitesCount;
     
+    /**
+     * Performs the three phase phase commit over the group of connected
+     * participants.
+     *
+     * @return true if the transaction was commited, false otherwise
+     */
     public boolean performThreePhaseCommit() {
        //create cache manager
        EmbeddedCacheManager embeddedCacheManager = null;
@@ -43,7 +48,7 @@ public class Coordinator {
        sitesCount = initializeSitesCache(sitesCache);
        
        //forward initial request to all sites
-       coordinatorCache.put("request", "canCommit?");
+       coordinatorCache.put("request", "canCommit");
        
        //create listener for the sitesCache
        SiteVotesListener siteVotesListener = new SiteVotesListener();
@@ -93,17 +98,46 @@ public class Coordinator {
        }
    }
    
+    /**
+     * Perform the two phase commit and print the result of the transaction
+     */
+    public static void run() {
+        Coordinator coordinator = new Coordinator();
+        boolean result = coordinator.performThreePhaseCommit();
+
+        if (result) {
+            System.out.println("Transaction was commited.");
+        } else {
+            System.out.println("Transaction was aborted.");
+        }
+    }
+    
     @Listener
     @SuppressWarnings("unused")
     private class SiteVotesListener {
+        /**
+         * Set of unique addresses of participants which have already commited.
+         */
         private final Set<Address> canCommitSites = Collections.synchronizedSet(new HashSet<Address>());
+        /**
+         * Set of unique addresses of participants which have already acknowledged receiving the result.
+         */
         private final Set<Address> acknowledgedSites = Collections.synchronizedSet(new HashSet<Address>());
+        /**
+         * Set of unique addresses of participants which have already acknowledged commiting or aborting.
+         */
         private final Set<Address> haveCommitedSites = Collections.synchronizedSet(new HashSet<Address>());
+        private long start;
+        private static final long TIMEOUT = 5000;
 
-        
+
+        /**
+         * Method triggered on a modification of a site's cache entry.
+         *
+         * @param e object containing information about the event that happened
+         */
         @CacheEntryCreated
         @CacheEntryModified
-        @CacheEntryRemoved
         public synchronized void addSitesDecision(CacheEntryEvent e) {
             switch((String) e.getValue()) {
                 case "Yes": {
@@ -128,7 +162,17 @@ public class Coordinator {
                     if (acknowledgedSites.size() == sitesCount) {
                         coordinatorCache.put("decision", "doCommit");
                         result = "commited";
-
+                        System.currentTimeMillis();
+                    }
+                    break;
+                }
+                case "haveCommited": {
+                    if ((System.currentTimeMillis() - start) > TIMEOUT) {
+                        System.out.println("Error: Some participants have timed out before they "
+                                + "acknowledged having commited the transaction.");
+                    }
+                    haveCommitedSites.add((Address) e.getKey());
+                    if (haveCommitedSites.size() == sitesCount) {
                         //notify the coordinator of the result
                         synchronized (mutex) {
                             mutex.notify();
@@ -136,19 +180,8 @@ public class Coordinator {
                     }
                     break;
                 }
-                case "haveCommited": {
-                    haveCommitedSites.add((Address) e.getKey());
-                    if (haveCommitedSites.size() == sitesCount) {
-                        //TODO
-                    }
-                    break;
-                }
             }
         }
-    }
-
-    public static void main(String[] argc) {
-        threePhaseCommitTest();
     }
 }
 

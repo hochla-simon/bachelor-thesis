@@ -1,6 +1,7 @@
-package cz.muni.fi.infinispan.twoPhaseCommit;
+package cz.muni.fi.infinispan.twophasecommit;
 
-import cz.muni.fi.infinispan.twoPhaseCommit.LockFileDemo.TransactionDecision;
+import static cz.muni.fi.infinispan.twophasecommit.LockFileDemo.TRANSACTION_DATA;
+import cz.muni.fi.infinispan.twophasecommit.LockFileDemo.TransactionDecision;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.util.logging.Level;
@@ -110,12 +111,16 @@ public class Participant {
             if ("decision".equals((String) e.getKey())) {
                 //set result
                 result = (String) e.getValue();
-
+                
+                //write out the transaction content if commited
+                if ("commited".equals(result)) {
+                    LockFileDemo.writeToFile(TRANSACTION_DATA);
+                }
                 //release locked resources
                 if (lock != null) {
                     LockFileDemo.releaseLock(lock);
                 }
-
+               
                 //acknowledge having received the result back to the coordinator
                 sitesCache.put(sitesCache.getCacheManager().getAddress(), "ACK");
 
@@ -134,7 +139,7 @@ public class Participant {
             String decision = null;
             if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
                 decision = "commit";
-                //lock = LockFileDemo.lockFile();
+                lock = LockFileDemo.lockFile();
             } else {
                 decision = "abort";
             }

@@ -8,6 +8,7 @@ package cz.muni.fi.akka.twophasecommit;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import com.typesafe.config.ConfigFactory;
+import static cz.muni.fi.akka.twophasecommit.LockFileDemo.TRANSACTION_DATA;
 import cz.muni.fi.akka.twophasecommit.LockFileDemo.TransactionDecision;
 import java.nio.channels.FileLock;
 
@@ -40,6 +41,8 @@ public class Participant extends UntypedActor{
                     getSender().tell(decision, getSelf());
                     break;
                 } case commit: {
+                    //write to file the commited data
+                    LockFileDemo.writeToFile(TRANSACTION_DATA);
                     //release locked resources
                     LockFileDemo.releaseLock(lock);
                     //acknowledge having received the result

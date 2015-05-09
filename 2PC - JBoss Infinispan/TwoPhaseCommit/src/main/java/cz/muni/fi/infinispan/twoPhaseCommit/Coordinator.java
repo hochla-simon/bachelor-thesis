@@ -1,4 +1,4 @@
-package cz.muni.fi.infinispan.twoPhaseCommit;
+package cz.muni.fi.infinispan.twophasecommit;
 
 import java.io.IOException;
 import org.infinispan.Cache;

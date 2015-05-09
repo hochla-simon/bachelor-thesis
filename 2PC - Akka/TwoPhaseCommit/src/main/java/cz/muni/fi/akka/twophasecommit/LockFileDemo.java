@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.Arrays;
@@ -33,6 +34,7 @@ public class LockFileDemo {
     private static RandomAccessFile file = null;
     
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
+    public static final String TRANSACTION_DATA = "Lorem ipsum dolor sit amet.";
 
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -53,6 +55,11 @@ public class LockFileDemo {
         }
     }
 	
+    /**
+     * Returns the site's transaction decision
+     *
+     * @return the site's decision to commit or abort
+     */
     public static FileLock lockFile() {
         try {
             // This will create the file if it doesn't exit.
@@ -76,6 +83,11 @@ public class LockFileDemo {
         return lock;
     }
     
+    /**
+     * Release the lock 'lock' and close the file 'file'
+     *
+     * @throws IOException
+     */
     public static void releaseLock(FileLock lock) {
         if (lock != null && lock.isValid()) {
             try {
@@ -86,16 +98,41 @@ public class LockFileDemo {
         } else {
             System.out.println("Lock " + lock + " is unvalid.");
         }
-        if (file != null) {
-            try {
-                file.close();
-            } catch (IOException ex) {
-                Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        try {
+            file.close();
+        } catch (IOException ex) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
+    /**
+     * Returns the site's transaction decision
+     *
+     * @return the site's decision to commit or abort
+     */
     public static TransactionDecision decideTransaction() {
         return TRANSACTION_DECISION;
+    }
+    
+    public static void writeToFile(String data) {
+        if (file == null) {
+            System.out.println("File " + file + " is null and cannot be written to.");
+            System.exit(1);
+        }
+        byte[] answerByteArray = data.getBytes();
+        ByteBuffer byteBuffer = ByteBuffer.wrap(answerByteArray);
+
+        FileChannel f = file.getChannel();
+
+        // Move to the beginning of the file and write out the contents
+        // of the byteBuffer.
+        try {
+            f.position(0);
+            while (byteBuffer.hasRemaining()) {
+                f.write(byteBuffer);
+            }
+        } catch (IOException e) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, e);
+        }
     }
 }

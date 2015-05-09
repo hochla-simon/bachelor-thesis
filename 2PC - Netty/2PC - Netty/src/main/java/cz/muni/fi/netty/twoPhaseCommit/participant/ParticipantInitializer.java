@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.twoPhaseCommit.participant;
+package cz.muni.fi.netty.twophasecommit.participant;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;

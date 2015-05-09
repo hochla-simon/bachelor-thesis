@@ -6,9 +6,11 @@
 package cz.fi.muni.zookeeper.twophasecommit;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.logging.Level;
@@ -32,7 +34,8 @@ public class LockFileDemo {
     
     //site's decision in transaction
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
-    
+    public static final String TRANSACTION_DATA = "Lorem ipsum dolor sit amet.";
+
     //transaction to be performed on the participant
     private static final String TRANSACTION = "transactionToPerform";
     
@@ -72,12 +75,21 @@ public class LockFileDemo {
      * @throws IOException
      * @throws InterruptedException 
      */
-    public static FileLock lockFile() throws IOException, InterruptedException {
-        // This will create the file if it doesn't exit.
-        file = new RandomAccessFile(LOCK_FILE, "rw");
+    public static FileLock lockFile() {
+        try {
+            // This will create the file if it doesn't exit.
+            file = new RandomAccessFile(LOCK_FILE, "rw");
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
+        }
         FileChannel fileChannel = file.getChannel();
 
-        FileLock lock = fileChannel.tryLock();
+        FileLock lock = null;
+        try {
+            lock = fileChannel.tryLock();
+        } catch (IOException ex) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         if (lock == null || !lock.isValid()) {
             System.out.println("Lock for file " + file + " cannot be applied.");
@@ -90,14 +102,20 @@ public class LockFileDemo {
      * Release the lock 'lock' and close the file 'file'
      * @throws IOException 
      */
-    public static void releaseLock(FileLock fileLock) throws IOException  {
+    public static void releaseLock(FileLock fileLock) {
         if (fileLock != null && fileLock.isValid()) {
-            fileLock.release();
+            try {
+                fileLock.release();
+            } catch (IOException ex) {
+                Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             System.out.println("Lock " + fileLock + " is unvalid.");
         }
-        if (file != null) {
+        try {
             file.close();
+        } catch (IOException ex) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -107,5 +125,27 @@ public class LockFileDemo {
      */
     public static TransactionDecision decideTransaction() {
         return TRANSACTION_DECISION;
+    }
+    
+    public static void writeToFile(String data) {
+        if (file == null) {
+            System.out.println("File " + file + " is null and cannot be written to.");
+            System.exit(1);
+        }
+        byte[] answerByteArray = data.getBytes();
+        ByteBuffer byteBuffer = ByteBuffer.wrap(answerByteArray);
+
+        FileChannel f = file.getChannel();
+
+        // Move to the beginning of the file and write out the contents
+        // of the byteBuffer.
+        try {
+            f.position(0);
+            while (byteBuffer.hasRemaining()) {
+                f.write(byteBuffer);
+            }
+        } catch (IOException e) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, e);
+        }
     }
 }

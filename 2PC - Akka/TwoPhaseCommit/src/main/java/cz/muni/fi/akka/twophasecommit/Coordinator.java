@@ -55,7 +55,7 @@ public class Coordinator extends UntypedActor {
     
     /**
      * Receive decision or acknowledgement from a participant and act according to it.
-     * Finally wait for acknowledgement from all participants and than print out the result via the listener.
+     * Wait for acknowledgement from all participants and than print out the result via the listener.
      * @param message recieved message
      */
     @Override

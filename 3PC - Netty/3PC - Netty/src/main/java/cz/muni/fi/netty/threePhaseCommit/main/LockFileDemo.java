@@ -3,8 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.infinispan.twophasecommit;
+package cz.muni.fi.netty.threephasecommit.main;
 
+import cz.muni.fi.netty.threephasecommit.coordinator.Coordinator;
+import cz.muni.fi.netty.threephasecommit.participant.Participant;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,19 +17,26 @@ import java.nio.channels.FileLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ *
+ * @author Simon
+ */
 public class LockFileDemo {
-    
+
     public enum TransactionDecision {
+
         commit, abort
     };
-    
-    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop";
+
+    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop\\";
     private static final String FILE_NAME = "file.txt";
+
+    private static final File lockFile = new File(FILE_PATH, FILE_NAME);
+    private static RandomAccessFile file = null;
+
     private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
-    private static final File LOCK_FILE = new File(FILE_PATH, FILE_NAME);
-    private static RandomAccessFile file = null;
-    
+    public static final int SITES_COUNT = 1;
     public static final String TRANSACTION_DATA = "Lorem ipsum dolor sit amet.";
 
     public static void main(String[] args) {
@@ -36,24 +45,28 @@ public class LockFileDemo {
                     + "run either with 'participant' or 'coordinator' as argument.");
             System.exit(0);
         }
-        switch (args[0]) {
-            case "participant":
-                Participant.run();
-                break;
-            case "coordinator":
-                Coordinator.run();
-                break;
-            default:
-                System.out.println("Wrong type of argument: "
-                        + "run either with 'participant' or 'coordinator' as argument.");
-                System.exit(0);
+        try {
+            switch (args[0]) {
+                case "participant":
+                    Participant.run();
+                    break;
+                case "coordinator":
+                    Coordinator.run();
+                    break;
+                default:
+                    System.out.println("Wrong type of argument: "
+                            + "run either with 'participant' or 'coordinator' as argument.");
+                    System.exit(0);
+            }
+        } catch (Exception e) {
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, e);
         }
     }
-    
+
     public static FileLock lockFile() {
         try {
             // This will create the file if it doesn't exit.
-            file = new RandomAccessFile(LOCK_FILE, "rw");
+            file = new RandomAccessFile(lockFile, "rw");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -72,7 +85,12 @@ public class LockFileDemo {
         }
         return lock;
     }
-    
+
+    /**
+     * Release the lock 'lock' and close the file 'file'
+     *
+     * @throws IOException
+     */
     public static void releaseLock(FileLock lock) {
         if (lock != null && lock.isValid()) {
             try {
@@ -89,11 +107,16 @@ public class LockFileDemo {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
+    /**
+     * Returns the site's transaction decision
+     *
+     * @return the site's decision to commit or abort
+     */
     public static TransactionDecision decideTransaction() {
         return TRANSACTION_DECISION;
     }
-    
+
     public static void writeToFile(String data) {
         if (file == null) {
             System.out.println("File " + file + " is null and cannot be written to.");

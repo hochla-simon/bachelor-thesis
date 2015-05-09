@@ -13,8 +13,9 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.threePhaseCommit.coordinator;
+package cz.muni.fi.netty.threephasecommit.coordinator;
 
+import static cz.muni.fi.netty.threephasecommit.main.LockFileDemo.SITES_COUNT;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -22,7 +23,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import static cz.muni.fi.netty.threePhaseCommit.coordinator.CoordinatorDemo.SITES_COUNT;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 /**
@@ -36,14 +36,13 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
     private int canCommitCounter = 0;
     private int acknowledgedCounter = 0;
     private int haveCommited = 0;
-    private boolean done = false;
     
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         channels.add(ctx.channel());
         if (channels.size() == SITES_COUNT) {
             for (Channel c : channels) {
-                c.writeAndFlush("canCommit?\r\n");
+                c.writeAndFlush("canCommit\r\n");
                 
             }
         }
@@ -67,6 +66,7 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
                     c.writeAndFlush("abort\r\n")
                             .addListener(ChannelFutureListener.CLOSE);
                 }
+                printResult("aborted");
                 break;
             }
             case "ACK": {
@@ -81,14 +81,18 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
             case "haveCommited": {
                 haveCommited++;
                 if (haveCommited == SITES_COUNT) {
-                    done = true;
+                    printResult("commited");
+                    ctx.close();
                 }
-                ctx.close();
                 break;
             }
         }
     }
 
+    private static void printResult(String result) {
+        System.out.println("Transaction has been " + result + ".");
+    }
+    
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
         ctx.flush();

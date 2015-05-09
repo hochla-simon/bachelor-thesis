@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.threePhaseCommit.participant;
+package cz.muni.fi.netty.threephasecommit.participant;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;

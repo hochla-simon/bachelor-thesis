@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.twoPhaseCommit.coordinator;
+package cz.muni.fi.netty.twophasecommit.coordinator;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -21,7 +21,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import cz.muni.fi.netty.twoPhaseCommit.main.LockFileDemo;
+import cz.muni.fi.netty.twophasecommit.main.LockFileDemo;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -13,10 +13,11 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.twoPhaseCommit.participant;
+package cz.muni.fi.netty.twophasecommit.participant;
 
-import cz.muni.fi.netty.twoPhaseCommit.main.LockFileDemo;
-import cz.muni.fi.netty.twoPhaseCommit.main.LockFileDemo.TransactionDecision;
+import cz.muni.fi.netty.twophasecommit.main.LockFileDemo;
+import static cz.muni.fi.netty.twophasecommit.main.LockFileDemo.TRANSACTION_DATA;
+import cz.muni.fi.netty.twophasecommit.main.LockFileDemo.TransactionDecision;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -50,6 +51,7 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
                 break;
             }
             case "commited": {
+                LockFileDemo.writeToFile(TRANSACTION_DATA);
                 //release locked resources
                 LockFileDemo.releaseLock(lock);
                 //acknowledge having received the result
@@ -67,6 +69,7 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
                 ctx.writeAndFlush("ACK" + "\r\n");
                 printResult("aborted");
                 ctx.close();
+                break;
             }
         }
     }

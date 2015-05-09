@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.threephasecommit;
+package cz.muni.fi.akka.threephasecommit;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -12,7 +12,7 @@ import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.routing.BroadcastGroup;
 import com.typesafe.config.ConfigFactory;
-import cz.muni.fi.threephasecommit.Participant.Decision;
+import cz.muni.fi.akka.threephasecommit.Participant.Decision;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,8 +27,6 @@ public class Coordinator extends UntypedActor {
         canCommit, preCommit, doCommit, abort
     }
     
-    private final List<String> paths;
-
     private final int nrOfParticipants;
 
     private final ActorRef listener;
@@ -39,7 +37,6 @@ public class Coordinator extends UntypedActor {
     private final Set<ActorRef> participantsHavingAcknowledged;
     
     public Coordinator(List<String> paths, ActorRef listener) {
-        this.paths = paths;
         this.listener = listener;
         workerRouter = getContext().actorOf(new BroadcastGroup(paths).props(), "workerRouter");
         this.nrOfParticipants = paths.size();
@@ -48,11 +45,21 @@ public class Coordinator extends UntypedActor {
         this.participantsHavingAcknowledged = new HashSet<ActorRef>();
     }
     
+    /**
+     * Request the participants via the router to vote about the transaction.
+     */
     @Override
     public void preStart() {
         workerRouter.tell(Request.canCommit, getSelf());
     }
     
+    /**
+     * Receive decision or acknowledgement from a participant and act according
+     * to it. Wait for acknowledgement from all participants and than
+     * print out the result via the listener.
+     *
+     * @param message recieved message
+     */
     @Override
     public void onReceive(Object message) {
         if (message instanceof Decision) {
@@ -94,7 +101,14 @@ public class Coordinator extends UntypedActor {
         }
     }
     
-    public static void performThreePhaseCommit(final List<String> paths) {
+    /**
+     * Creates participants in the given paths (possibly in a different actor
+     * system according to the coordination file), then create the coordinator
+     * and perform the two phase commit.
+     *
+     * @param paths Paths to the participant actors
+     */
+    public static void run(final List<String> paths) {
 
         // Create an Akka system
         ActorSystem coordinatorSystem = ActorSystem.create("3PCCoordinatorSystem", ConfigFactory.load("coordinator"));
@@ -115,6 +129,6 @@ public class Coordinator extends UntypedActor {
 
         coordinatorSystem.actorOf(Props.create(Terminator.class, coordinator), "coordinatorTerminator");
         coordinatorSystem.actorOf(Props.create(Terminator.class, participant1), "participant1Terminator");
-        coordinatorSystem.actorOf(Props.create(Terminator.class, participant1), "participant2Terminator");
+        coordinatorSystem.actorOf(Props.create(Terminator.class, participant2), "participant2Terminator");
     }
 }

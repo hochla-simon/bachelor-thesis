@@ -13,13 +13,19 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.threePhaseCommit.participant;
+package cz.muni.fi.netty.threephasecommit.participant;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import cz.muni.fi.netty.threephasecommit.main.LockFileDemo;
+import static cz.muni.fi.netty.threephasecommit.main.LockFileDemo.TRANSACTION_DATA;
+import cz.muni.fi.netty.threephasecommit.main.LockFileDemo.TransactionDecision;
+import static cz.muni.fi.netty.threephasecommit.main.LockFileDemo.writeToFile;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles a client-side channel.
@@ -33,9 +39,9 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws IOException, InterruptedException {
         
         switch(msg) {
-            case "canCommit?": {
+            case "canCommit": {
                 String line;
-                if ("commit".equals(LockFileDemo.decideTransaction())) {
+                if (TransactionDecision.commit == LockFileDemo.decideTransaction()) {
                     line = "Yes";
                     lock = LockFileDemo.lockFile();
                 } else {
@@ -50,23 +56,31 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
                 break;
             }
             case "doCommit": {
+                writeToFile(TRANSACTION_DATA);
+                LockFileDemo.releaseLock(lock);
                 String line = "haveCommited";
                 ctx.writeAndFlush(line + "\r\n");
-                LockFileDemo.releaseLock(lock);
+                printResult("commited");
                 break;
             }
             case "abort": {
                 if (lock != null) {
                     LockFileDemo.releaseLock(lock);
                 }
+                printResult("aborted");
                 break;
             }
         }
+        
+    }
+    
+    private static void printResult(String result) {
+        System.out.println("Transaction has been " + result + ".");
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ctx);
         ctx.close();
     }
 }
