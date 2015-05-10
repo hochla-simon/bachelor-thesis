@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.leaderelection.participant;
+package cz.muni.fi.netty.leaderelection.electioncandidate;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -27,16 +27,16 @@ import io.netty.handler.ssl.SslContext;
 /**
  * Creates a newly configured {@link ChannelPipeline} for a new channel.
  */
-public class ParticipantInitializer extends ChannelInitializer<SocketChannel> {
+public class ElectionCandidateInitializer extends ChannelInitializer<SocketChannel> {
 
     private static final StringDecoder DECODER = new StringDecoder();
     private static final StringEncoder ENCODER = new StringEncoder();
 
-    private static final ParticipantHandler CLIENT_HANDLER = new ParticipantHandler();
+    private static final ElectionCandidatetHandler CLIENT_HANDLER = new ElectionCandidatetHandler();
 
     private final SslContext sslCtx;
 
-    public ParticipantInitializer(SslContext sslCtx) {
+    public ElectionCandidateInitializer(SslContext sslCtx) {
         this.sslCtx = sslCtx;
     }
 
@@ -45,7 +45,7 @@ public class ParticipantInitializer extends ChannelInitializer<SocketChannel> {
         ChannelPipeline pipeline = ch.pipeline();
 
         if (sslCtx != null) {
-            pipeline.addLast(sslCtx.newHandler(ch.alloc(), Participant.HOST, Participant.PORT));
+            pipeline.addLast(sslCtx.newHandler(ch.alloc(), ElectionCandidate.HOST, ElectionCandidate.PORT));
         }
 
         // Add the text line codec combination first,

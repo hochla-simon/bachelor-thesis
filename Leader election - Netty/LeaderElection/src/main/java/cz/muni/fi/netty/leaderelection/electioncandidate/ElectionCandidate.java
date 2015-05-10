@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.leaderelection.participant;
+package cz.muni.fi.netty.leaderelection.electioncandidate;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -23,7 +23,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
-public final class Participant {
+public final class ElectionCandidate {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final String HOST = System.getProperty("host", "127.0.0.1");
@@ -43,7 +43,7 @@ public final class Participant {
             Bootstrap b = new Bootstrap();
             b.group(group)
              .channel(NioSocketChannel.class)
-             .handler(new ParticipantInitializer(sslCtx));
+             .handler(new ElectionCandidateInitializer(sslCtx));
             
             // Start the client.
             Channel ch = b.connect(HOST, PORT).sync().channel(); // (5)

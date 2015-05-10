@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package cz.muni.fi.netty.leaderelection.participant;
+package cz.muni.fi.netty.leaderelection.electioncandidate;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,15 +24,17 @@ import java.io.IOException;
  * Handles a client-side channel.
  */
 @Sharable
-public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
+public class ElectionCandidatetHandler extends SimpleChannelInboundHandler<String> {
     
     
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws IOException, InterruptedException {
         
+        //if I have become the leader, perform the leader procedure, otherwise
+        //print the message containg info about the new leader
         if (msg.equals("Your are the leader now.")) {
             leaderProcedure();
-            ctx.writeAndFlush("finished\r\n");
+            ctx.close();
         } else {
             System.out.println(msg);
         }
@@ -44,10 +46,14 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
         ctx.close();
     }
     
+    /**
+     * Print to console that I have become the leader, wait for 5 seconds and terminate.
+     * @throws InterruptedException 
+     */
     private void leaderProcedure() throws InterruptedException {
         System.out.println("I am the leader now.");
-        System.out.println("Going to wait for 3 seconds...");
-        Thread.sleep(3000);
+        System.out.println("Going to wait for 5 seconds...");
+        Thread.sleep(5000);
         System.out.println("Done.");
         System.out.println("Closing.");
     }

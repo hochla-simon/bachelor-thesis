@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package cz.muni.fi.twophasecommit;
+package cz.muni.fi.akka.twophasecommit;
 
 import java.util.ArrayList;
 import java.util.Comparator;

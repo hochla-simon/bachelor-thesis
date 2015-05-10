@@ -59,6 +59,7 @@ public class LeaderElectable {
         if (keySet.isEmpty()) {
             myIndex = 0;
         } else {
+            //converting CloseableIteratorSet to ArrayList to be able to acquire the minimal value
             List<Integer> memberIndexes = new ArrayList<>();
             for (Integer index : keySet) {
                 memberIndexes.add(index);
@@ -82,7 +83,7 @@ public class LeaderElectable {
 
     /**
      * Inform other members that I have become the leader, perform the
-     * leaderProcedure and do the work after releasing the leadership.
+     * leaderProcedure and clean respective cache entries after releasing the leadership.
      */
     private synchronized void becomeLeader() {
         leaderCache.put(myAddress, "");
@@ -96,7 +97,7 @@ public class LeaderElectable {
     }
 
     /**
-     * Initializes the given cache manager and both members and leader cache.
+     * Initializes the given cache manager, members cache and leader cache.
      * Next it initializes myAddress with the address of this node.
      */
     private void initializeCachesAndMyAddress() {
@@ -149,6 +150,8 @@ public class LeaderElectable {
             //get the minimal index from electableMembersCache to determine the new leader
             Integer minIndex;
             if (!keySet.isEmpty()) {
+                //convert CloseableIteratorSet to ArrayList
+                //to be able to get the minimal value
                 List<Integer> memberIndexes = new ArrayList<>();
                 for (Integer index : keySet) {
                     memberIndexes.add(index);
