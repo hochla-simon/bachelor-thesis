@@ -3,11 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.lock;
+package cz.muni.fi.zookeeper.lock;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.logging.Level;
@@ -22,10 +23,24 @@ public class LockFileDemo {
     private static final File lockFile = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
     
+    private static final String HOST = "127.0.0.1";
+    private static final int PORT = 2181;
     
-    public static void main(String[] args) {
+    public static void main(String args[]) {
+        electionTest();
+    }
+    
+    /**
+     * Wait until I have acquired the lock, lock resources,
+     * sleep for 5 seconds, release resources and shut down.
+     *
+     * @throws InterruptedException
+     * @throws KeeperException
+     * @throws UnsupportedEncodingException
+     */
+    private static void electionTest() {
         try {
-            Lock lock = new Lock(args[0], "/_locknode_");
+            Lock lock = new Lock(HOST, PORT, "/_locknode_");
             lock.lock();
             FileLock fileLock = lockFile();
             Thread.sleep(5000);

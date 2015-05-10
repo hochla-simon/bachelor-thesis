@@ -16,9 +16,9 @@ import java.util.logging.Logger;
  */
 public class Demo {
     /**
-     * Count of the participating electable sites
-     */
-     public static final int SITES_COUNT = 3;
+    * Count of the participating electable sites
+    */
+    public static final int SITES_COUNT = 3;
         
     public static void main(String[] args) {
         if (args.length != 1) {

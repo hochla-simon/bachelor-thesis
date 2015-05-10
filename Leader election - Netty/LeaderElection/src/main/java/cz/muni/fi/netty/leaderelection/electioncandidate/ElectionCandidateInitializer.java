@@ -32,7 +32,7 @@ public class ElectionCandidateInitializer extends ChannelInitializer<SocketChann
     private static final StringDecoder DECODER = new StringDecoder();
     private static final StringEncoder ENCODER = new StringEncoder();
 
-    private static final ElectionCandidatetHandler CLIENT_HANDLER = new ElectionCandidatetHandler();
+    private static final ElectionCandidateHandler CLIENT_HANDLER = new ElectionCandidateHandler();
 
     private final SslContext sslCtx;
 

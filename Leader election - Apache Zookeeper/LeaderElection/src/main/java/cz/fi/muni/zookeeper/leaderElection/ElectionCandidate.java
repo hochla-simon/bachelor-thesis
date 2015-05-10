@@ -22,7 +22,7 @@ import org.apache.zookeeper.data.Stat;
  */
 public class ElectionCandidate extends SyncPrimitive {
 
-    public static final String ADDRESS = "127.0.0.1";
+    public static final String HOST = "127.0.0.1";
     public static final int PORT = 2181;
     
     ElectionCandidate(String address, String root) throws KeeperException, InterruptedException {
@@ -130,15 +130,15 @@ public class ElectionCandidate extends SyncPrimitive {
      * @throws KeeperException
      * @throws UnsupportedEncodingException 
      */
-    private static void run() throws InterruptedException, KeeperException, UnsupportedEncodingException {
-        ElectionCandidate coordinator = new ElectionCandidate(ADDRESS + ":" + PORT, "/ELECTION");
+    private static void electionTest() throws InterruptedException, KeeperException, UnsupportedEncodingException {
+        ElectionCandidate coordinator = new ElectionCandidate(HOST + ":" + PORT, "/ELECTION");
         coordinator.becomeElectable();
         Thread.sleep(5000);
     }
     
     public static void main(String args[]) {
         try {
-            run();
+            electionTest();
         } catch (UnsupportedEncodingException | InterruptedException | KeeperException ex) {
             Logger.getLogger(SyncPrimitive.class.getName()).log(Level.SEVERE, null, ex);
         }

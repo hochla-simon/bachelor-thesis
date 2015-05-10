@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.netty.lock.participant;
+package cz.muni.fi.infinispan.lock;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -15,55 +15,70 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LockFileDemo {
-   
-    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop\\";
+    
+    public enum TransactionDecision {
+        commit, abort
+    };
+    
+    //path to the locked file
+    private static final String FILE_PATH = "/home/simon/Desktop/";
+    //name of the locked file
     private static final String FILE_NAME = "file.txt";
+    //file to lock
+    private static final File LOCK_FILE = new File(FILE_PATH, FILE_NAME);
     
-    private static final File lockFile = new File(FILE_PATH, FILE_NAME);
     private static RandomAccessFile file = null;
-    private static FileLock lock = null;
+    private static FileLock fileLock = null;
     
+    //site's decision in transaction
+    private static final TransactionDecision TRANSACTION_DECISION = TransactionDecision.commit;
     
     public static void main(String[] args) {
-        try {
-            Participant.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+       Lock lock = new Lock();
+       lock.askForLock();
     }
     
-    public static void lockFile() throws InterruptedException {
+    /**
+     * Lock the file LOCK_FILE if possible, otherwise exit with error
+     * @throws IOException
+     * @throws InterruptedException 
+     */
+    public static void lockFile() {
         try {
             // This will create the file if it doesn't exit.
-            file = new RandomAccessFile(lockFile, "rw");
+            file = new RandomAccessFile(LOCK_FILE, "rw");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
-        FileChannel f = file.getChannel();
+        FileChannel fileChannel = file.getChannel();
 
-        FileLock fileLock = null;
+        FileLock lock = null;
         try {
-            fileLock = f.tryLock();
+            lock = fileChannel.tryLock();
         } catch (IOException ex) {
             Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        if (fileLock == null || !fileLock.isValid()) {
+        if (lock == null || !lock.isValid()) {
             System.out.println("Lock for file " + file + " cannot be applied.");
             System.exit(1);
         }
-        lock = fileLock;
+        fileLock = lock;
     }
     
-    public static void releaseLock() {
-        if (lock != null && lock.isValid()) {
+    /**
+     * Release the lock 'lock' and close the file 'file'
+     * @throws IOException 
+     */
+    public static void releaseLock()  {
+        if (fileLock != null && fileLock.isValid()) {
             try {
-                lock.release();
+                fileLock.release();
             } catch (IOException ex) {
                 Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
-            System.out.println("Lock " + lock + " is unvalid.");
+            System.out.println("Lock " + fileLock + " is unvalid.");
         }
         if (file != null) {
             try {
@@ -72,5 +87,13 @@ public class LockFileDemo {
                 Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+    
+    /** 
+     * Returns the site's transaction decision
+     * @return the site's decision to commit or abort
+     */
+    public static TransactionDecision decideTransaction() {
+        return TRANSACTION_DECISION;
     }
 }

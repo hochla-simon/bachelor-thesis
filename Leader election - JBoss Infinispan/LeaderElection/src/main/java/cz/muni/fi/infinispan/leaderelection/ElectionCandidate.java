@@ -1,4 +1,4 @@
-package LeaderElection;
+package cz.muni.fi.infinispan.leaderelection;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import org.infinispan.notifications.cachemanagerlistener.annotation.ViewChanged;
 import org.infinispan.notifications.cachemanagerlistener.event.ViewChangedEvent;
 import org.infinispan.remoting.transport.Address;
 
-public class LeaderElectable {
+public class ElectionCandidate {
 
     /**
      * Cache for the addresses of the electable members indexed by the
@@ -90,7 +90,7 @@ public class LeaderElectable {
         try {
             leaderProcedure();
         } catch (InterruptedException ex) {
-            Logger.getLogger(LeaderElectable.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ElectionCandidate.class.getName()).log(Level.SEVERE, null, ex);
         }
         electableMembersCache.remove(myIndex);
         leaderCache.remove(myAddress);
@@ -104,7 +104,7 @@ public class LeaderElectable {
         try {
             embeddedCacheManager = new DefaultCacheManager("infinispan.xml");
         } catch (IOException ex) {
-            Logger.getLogger(LeaderElectable.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ElectionCandidate.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         electableMembersCache = embeddedCacheManager.getCache("electable members cache");
@@ -184,7 +184,7 @@ public class LeaderElectable {
     }
 
     public static void main(String[] argc) {
-        LeaderElectable coordinator = new LeaderElectable();
+        ElectionCandidate coordinator = new ElectionCandidate();
         coordinator.becomeElectable();
     }
 }

@@ -15,8 +15,8 @@
  */
 package cz.muni.fi.netty.lock.participant;
 
-import static cz.muni.fi.netty.lock.participant.LockFileDemo.lockFile;
-import static cz.muni.fi.netty.lock.participant.LockFileDemo.releaseLock;
+import static cz.muni.fi.netty.lock.main.LockFileDemo.lockFile;
+import static cz.muni.fi.netty.lock.main.LockFileDemo.releaseLock;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -24,6 +24,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles a client-side channel.
@@ -36,11 +38,11 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws IOException, InterruptedException {
         
+        //perform unique resource access requiring operation if I have acquired the lock,
+        //otherwise print info containg ID of participant having acquired the lock
         if (msg.equals("canLock")) {
-            leaderProcedure();
-            ChannelFuture future = ctx.writeAndFlush("finished\r\n");
-            future.addListener(ChannelFutureListener.CLOSE);
-
+            uniqueResourcesAccessOperation();
+            ctx.close();
         } else {
             System.out.println(msg);
         }
@@ -48,17 +50,23 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        Logger.getLogger(ParticipantHandler.class.getName()).log(Level.SEVERE, null, cause);
         ctx.close();
     }
     
-    private void leaderProcedure() throws InterruptedException {
+    /**
+     * Print to console that I have acquired the lock, lock resources,
+     * wait for 5 seconds, release resources and terminate.
+     *
+     * @throws InterruptedException
+     */
+    private void uniqueResourcesAccessOperation() throws InterruptedException {
         System.out.println("I have acquired the lock.");
         lockFile();
-        System.out.println("Going to wait for 3 seconds...");
-        Thread.sleep(3000);
+        System.out.println("Going to wait for 5 seconds...");
+        Thread.sleep(5000);
         System.out.println("Done.");
         releaseLock();
-        System.out.println("Releasing the lock.");
+        System.out.println("Releasing the lock and closing.");
     }
 }

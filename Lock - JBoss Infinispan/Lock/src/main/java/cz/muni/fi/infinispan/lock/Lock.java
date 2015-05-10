@@ -1,13 +1,11 @@
-package cz.fi.muni.infinispan.lock;
+package cz.muni.fi.infinispan.lock;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import org.infinispan.Cache;
 import org.infinispan.notifications.Listener;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.infinispan.commons.util.CloseableIteratorCollection;
@@ -52,7 +50,7 @@ public class Lock {
      * Initialize caches and become electable: put my address into the cache of
      * waiting members and perform leader procedure when I become the leader.
      */
-    public void acquireForLock() {
+    public void askForLock() {
         initializeCachesAndMyAddress();
 
         CloseableIteratorSet<Integer> keySet = electableMembersCache.keySet();
@@ -74,14 +72,7 @@ public class Lock {
         //if I am the only active electable member, I become the leader,
         //otherwise set listener on leaderCache triggered when the current leader finishes   
         if (myIndex == 0) {
-            lock();
-            try {
-                performFileLocking();
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Lock.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            unlock();
-            embeddedCacheManager.stop();
+            performLocking();
         } else {
             LeaderAddressListener leaderAddressListener = new LeaderAddressListener();
             embeddedCacheManager.addListener(leaderAddressListener);
@@ -126,8 +117,6 @@ public class Lock {
     @SuppressWarnings("unused")
     private class LeaderAddressListener {
 
-        private final Set<Address> commitedSites = Collections.synchronizedSet(new HashSet<Address>());
-
         @ViewChanged
         public synchronized void leaderAddressRemoved(ViewChangedEvent e) {
             CloseableIteratorSet<Integer> keySet = electableMembersCache.keySet();
@@ -142,7 +131,8 @@ public class Lock {
                 disconnectedMembers.add(address);
             }
 
-            //disconnectedMembers will contain only the nodes, which have been removed in this view change
+            //disconnectedMembers will contain only the nodes,
+            //which have been removed in this view change
             disconnectedMembers.removeAll(newMembers);
 
             //removing the disconnected nodes from the electableMembersCache
@@ -170,17 +160,25 @@ public class Lock {
 
             //if my index is the minimal index, I will become the leader
             if (minIndex.equals(myIndex)) {
-                lock();
-                try {
-                    performFileLocking();
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Lock.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                unlock();
-                embeddedCacheManager.stop();
+                performLocking();
 
             }
         }
+    }
+
+    /**
+     * Lock resources, perform operation requiring unique access to resources
+     * and release the lock.
+     */
+    private void performLocking() {
+        lock();
+        try {
+            exclusiveResourceAccessOperation();
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Lock.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        unlock();
+        embeddedCacheManager.stop();
     }
 
     /**
@@ -189,7 +187,7 @@ public class Lock {
      *
      * @throws InterruptedException
      */
-    private void performFileLocking() throws InterruptedException {
+    private void exclusiveResourceAccessOperation() throws InterruptedException {
         System.out.println("---I have acquired the lock.---");
         System.out.println("---Going to wait for ten seconds...---");
         LockFileDemo.lockFile();

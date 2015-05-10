@@ -15,16 +15,19 @@
  */
 package cz.muni.fi.netty.leaderelection.electioncandidate;
 
+import cz.muni.fi.netty.leaderelection.coordinator.CoordinatorHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles a client-side channel.
  */
 @Sharable
-public class ElectionCandidatetHandler extends SimpleChannelInboundHandler<String> {
+public class ElectionCandidateHandler extends SimpleChannelInboundHandler<String> {
     
     
     @Override
@@ -42,7 +45,7 @@ public class ElectionCandidatetHandler extends SimpleChannelInboundHandler<Strin
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        Logger.getLogger(ElectionCandidateHandler.class.getName()).log(Level.SEVERE, null, cause);
         ctx.close();
     }
     
