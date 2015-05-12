@@ -1,9 +1,10 @@
 package cz.muni.fi.infinispan.twophasecommit;
 
-import static cz.muni.fi.infinispan.twophasecommit.LockFileDemo.TRANSACTION_DATA;
-import cz.muni.fi.infinispan.twophasecommit.LockFileDemo.TransactionDecision;
+import cz.fi.muni.infinispan.twophasecommit.main.Main;
+import static cz.fi.muni.infinispan.twophasecommit.main.Main.TRANSACTION_DATA;
+import cz.fi.muni.infinispan.twophasecommit.main.Main.TransactionDecision;
+import cz.fi.muni.infinispan.twophasecommit.main.LockFileDemo;
 import java.io.IOException;
-import java.nio.channels.FileLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.infinispan.Cache;
@@ -20,9 +21,9 @@ public class Participant {
 
     private Cache<String, String> coordinatorCache;
     private Cache<Address, String> sitesCache;
-    private FileLock lock = null;
     private String result = "";
     private static Integer mutex;
+    private String decision = null;
     
     /**
      * Perform the two phase commit by asking the coordinator for participation in the process,
@@ -93,7 +94,7 @@ public class Participant {
         @CacheEntryCreated
         @CacheEntryModified
         public synchronized void reportTransactionDecision(CacheEntryEvent e) {
-            if ("request".equals((String) e.getKey())) {
+            if ("request".equals((String) e.getKey()) && !e.isPre()) {
                 if ("canCommit?".equals((String) e.getValue())) {
                     decideAndReportTransactionDecision();
                 }
@@ -108,17 +109,17 @@ public class Participant {
         @CacheEntryCreated
         @CacheEntryModified
         public synchronized void receiveTransactionResult(CacheEntryEvent e) {
-            if ("decision".equals((String) e.getKey())) {
+            if ("decision".equals((String) e.getKey()) && !e.isPre()) {
                 //set result
                 result = (String) e.getValue();
                 
                 //write out the transaction content if commited
                 if ("commited".equals(result)) {
-                    LockFileDemo.writeToFile(TRANSACTION_DATA);
+                    LockFileDemo.writeToFile(Main.TRANSACTION_DATA);
                 }
                 //release locked resources
-                if (lock != null) {
-                    LockFileDemo.releaseLock(lock);
+                if ("commit".equals(decision)) {
+                    LockFileDemo.releaseLock();
                 }
                
                 //acknowledge having received the result back to the coordinator
@@ -136,10 +137,9 @@ public class Participant {
          * by putting it to the site's cache under the local address.
          */
         private void decideAndReportTransactionDecision() {
-            String decision = null;
-            if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
+            if (TransactionDecision.commit.equals(Main.decideTransaction())) {
                 decision = "commit";
-                lock = LockFileDemo.lockFile();
+                LockFileDemo.lockFile();
             } else {
                 decision = "abort";
             }

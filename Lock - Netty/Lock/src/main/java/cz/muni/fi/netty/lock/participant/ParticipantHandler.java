@@ -15,10 +15,7 @@
  */
 package cz.muni.fi.netty.lock.participant;
 
-import static cz.muni.fi.netty.lock.main.LockFileDemo.lockFile;
-import static cz.muni.fi.netty.lock.main.LockFileDemo.releaseLock;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
+import cz.muni.fi.netty.lock.main.LockFileDemo;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -62,11 +59,11 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
      */
     private void uniqueResourcesAccessOperation() throws InterruptedException {
         System.out.println("I have acquired the lock.");
-        lockFile();
+        LockFileDemo.lockFile();
         System.out.println("Going to wait for 5 seconds...");
         Thread.sleep(5000);
         System.out.println("Done.");
-        releaseLock();
+        LockFileDemo.releaseLock();
         System.out.println("Releasing the lock and closing.");
     }
 }

@@ -19,11 +19,9 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
-import java.nio.channels.FileLock;
+import cz.muni.fi.netty.threephasecommit.main.Main;
+import cz.muni.fi.netty.threephasecommit.main.Main.TransactionDecision;
 import cz.muni.fi.netty.threephasecommit.main.LockFileDemo;
-import static cz.muni.fi.netty.threephasecommit.main.LockFileDemo.TRANSACTION_DATA;
-import cz.muni.fi.netty.threephasecommit.main.LockFileDemo.TransactionDecision;
-import static cz.muni.fi.netty.threephasecommit.main.LockFileDemo.writeToFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,21 +31,24 @@ import java.util.logging.Logger;
 @Sharable
 public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
     
-    private FileLock lock = null;
+    private Decision decision = null;
+    
+    private enum Decision {
+        Yes, No
+    }
             
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws IOException, InterruptedException {
         
         switch(msg) {
             case "canCommit": {
-                String line;
-                if (TransactionDecision.commit == LockFileDemo.decideTransaction()) {
-                    line = "Yes";
-                    lock = LockFileDemo.lockFile();
+                if (TransactionDecision.commit == Main.decideTransaction()) {
+                    decision = Decision.Yes;
+                    LockFileDemo.lockFile();
                 } else {
-                    line = "No";
+                    decision = Decision.No;
                 }
-                ctx.writeAndFlush(line + "\r\n");
+                ctx.writeAndFlush(decision.name() + "\r\n");
                 break;
             }
             case "preCommit": {
@@ -56,16 +57,16 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
                 break;
             }
             case "doCommit": {
-                writeToFile(TRANSACTION_DATA);
-                LockFileDemo.releaseLock(lock);
+                LockFileDemo.writeToFile(Main.TRANSACTION_DATA);
+                LockFileDemo.releaseLock();
                 String line = "haveCommited";
                 ctx.writeAndFlush(line + "\r\n");
                 printResult("commited");
                 break;
             }
             case "abort": {
-                if (lock != null) {
-                    LockFileDemo.releaseLock(lock);
+                if (decision == Decision.Yes) {
+                    LockFileDemo.releaseLock();
                 }
                 printResult("aborted");
                 break;
@@ -80,7 +81,7 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ctx);
+        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ctx);
         ctx.close();
     }
 }

@@ -40,7 +40,8 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
     /**
      * Group of participants communicating with the coordinator
      */
-    private static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    private static final ChannelGroup channels = 
+            new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
         
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
@@ -98,7 +99,7 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
      * a new leader from the pool if it is not empty.
      */
     private class LeaderClosedListener implements ChannelFutureListener {
-        private final Channel leader;
+        private final Channel leader;   
         
         public LeaderClosedListener(Channel leader) {
             this.leader = leader;

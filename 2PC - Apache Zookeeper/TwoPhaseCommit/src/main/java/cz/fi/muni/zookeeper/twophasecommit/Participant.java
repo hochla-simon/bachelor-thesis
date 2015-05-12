@@ -5,12 +5,12 @@
  */
 package cz.fi.muni.zookeeper.twophasecommit;
 
-import static cz.fi.muni.zookeeper.twophasecommit.LockFileDemo.TRANSACTION_DATA;
-import cz.fi.muni.zookeeper.twophasecommit.LockFileDemo.TransactionDecision;
+import cz.fi.muni.zookeeper.twophasecommit.main.Main;
+import cz.fi.muni.zookeeper.twophasecommit.main.Main.TransactionDecision;
 import static cz.fi.muni.zookeeper.twophasecommit.SyncPrimitive.zk;
+import cz.fi.muni.zookeeper.twophasecommit.main.LockFileDemo;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.channels.FileLock;
 import java.util.List;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -26,7 +26,6 @@ public class Participant extends SyncPrimitive {
     private final int size;
     private String sitePath;
     private String transaction;
-    private FileLock lock;
 
     Participant(String address, String root, int size) throws Exception {
         super(address);
@@ -35,7 +34,6 @@ public class Participant extends SyncPrimitive {
         
         this.sitePath = null;
         this.transaction = null;
-        this.lock = null;
 
         if (zk != null) {
             Stat s = zk.exists(root, false);
@@ -60,9 +58,9 @@ public class Participant extends SyncPrimitive {
         
         //decide transaction and lock resources when agree with commit
         SyncPrimitive.Decision decision;
-        if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
+        if (TransactionDecision.commit == Main.decideTransaction()) {
             decision = SyncPrimitive.Decision.commit;
-            lock = LockFileDemo.lockFile();
+            LockFileDemo.lockFile();
         } else {
             decision = SyncPrimitive.Decision.abort;
         }
@@ -70,12 +68,12 @@ public class Participant extends SyncPrimitive {
         SyncPrimitive.Decision result = getResult();
 
         if (SyncPrimitive.Decision.commit == result) {
-            LockFileDemo.writeToFile(TRANSACTION_DATA);
+            LockFileDemo.writeToFile(Main.TRANSACTION_DATA);
         }
         
         //release resources
-        if (lock != null) {
-            LockFileDemo.releaseLock(lock);
+        if (decision == SyncPrimitive.Decision.commit) {
+            LockFileDemo.releaseLock();
         }
         
         sendAcknowledgement();

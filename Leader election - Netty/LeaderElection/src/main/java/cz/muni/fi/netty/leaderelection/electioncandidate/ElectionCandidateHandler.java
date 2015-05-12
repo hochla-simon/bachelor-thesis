@@ -15,7 +15,6 @@
  */
 package cz.muni.fi.netty.leaderelection.electioncandidate;
 
-import cz.muni.fi.netty.leaderelection.coordinator.CoordinatorHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -28,7 +27,6 @@ import java.util.logging.Logger;
  */
 @Sharable
 public class ElectionCandidateHandler extends SimpleChannelInboundHandler<String> {
-    
     
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws IOException, InterruptedException {

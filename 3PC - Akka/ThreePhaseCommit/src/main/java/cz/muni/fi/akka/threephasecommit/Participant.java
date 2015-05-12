@@ -5,12 +5,12 @@
  */
 package cz.muni.fi.akka.threephasecommit;
 
+import cz.muni.fi.akka.threephasecommit.main.Main;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import com.typesafe.config.ConfigFactory;
-import static cz.muni.fi.akka.threephasecommit.LockFileDemo.TRANSACTION_DATA;
-import cz.muni.fi.akka.threephasecommit.LockFileDemo.TransactionDecision;
-import java.nio.channels.FileLock;
+import cz.muni.fi.akka.threephasecommit.main.Main.TransactionDecision;
+import cz.muni.fi.akka.threephasecommit.main.LockFileDemo;
 
 /**
  *
@@ -21,7 +21,7 @@ public class Participant extends UntypedActor{
         Yes, No, ACK, haveCommited
     }
     
-    private FileLock lock = null;
+    private Decision decision = null;
 
     @Override
     public void onReceive(Object msg) {
@@ -29,30 +29,35 @@ public class Participant extends UntypedActor{
             Coordinator.Request request = (Coordinator.Request)msg;
             switch (request) {
                 case canCommit: {
-                    Decision result;
-                    if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
-                        result = Decision.Yes;
-                        lock = LockFileDemo.lockFile();
+                    if (TransactionDecision.commit == Main.decideTransaction()) {
+                        decision = Decision.Yes;
+                        LockFileDemo.lockFile();
                     } else {
-                        result = Decision.No;
+                        decision = Decision.No;
                     }
-                    getSender().tell(result, getSelf());
+                    getSender().tell(decision, getSelf());
                     break;
-                } case preCommit: {
+                }
+                case preCommit: {
                     getSender().tell(Decision.ACK, getSelf());
                     break;
                 }
                 case abort: {
-                    if (lock != null) {
-                        LockFileDemo.releaseLock(lock);
+                    //release resources if they have been lock
+                    if (Decision.Yes == decision) {
+                        LockFileDemo.releaseLock();
                     }
+                    printResult("aborted");
                     getContext().stop(getSelf());
                     break;
                 }
                 case doCommit: {
-                    LockFileDemo.writeToFile(TRANSACTION_DATA);
-                    LockFileDemo.releaseLock(lock);
+                    LockFileDemo.writeToFile(Main.TRANSACTION_DATA);
+                    //release resources
+                    LockFileDemo.releaseLock();
+                    //acknowledge having received the final decision
                     getSender().tell(Decision.haveCommited, getSelf());
+                    printResult("commited");
                     getContext().stop(getSelf());
                 }
             }
@@ -66,6 +71,10 @@ public class Participant extends UntypedActor{
      * actors in it remotely.
      */
     public static void run() {
-        ActorSystem participantSystem = ActorSystem.create("3PCParticipantSystem", ConfigFactory.load("participant"));
+        ActorSystem.create("3PCParticipantSystem", ConfigFactory.load("participant"));
+    }
+    
+    private void printResult(String result) {
+        System.out.println("Transaction has been " + result + ".");
     }
 }

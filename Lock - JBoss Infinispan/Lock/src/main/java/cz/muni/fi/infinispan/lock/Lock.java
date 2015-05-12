@@ -1,5 +1,6 @@
 package cz.muni.fi.infinispan.lock;
 
+import cz.muni.fi.infinispan.lock.main.LockFileDemo;
 import java.io.IOException;
 import java.util.ArrayList;
 import org.infinispan.Cache;
@@ -47,7 +48,7 @@ public class Lock {
     private EmbeddedCacheManager embeddedCacheManager = null;
 
     /**
-     * Initialize caches and become electable: put my address into the cache of
+     * Become electable: put my address into the cache of
      * waiting members and perform leader procedure when I become the leader.
      */
     public void askForLock() {
@@ -161,7 +162,6 @@ public class Lock {
             //if my index is the minimal index, I will become the leader
             if (minIndex.equals(myIndex)) {
                 performLocking();
-
             }
         }
     }

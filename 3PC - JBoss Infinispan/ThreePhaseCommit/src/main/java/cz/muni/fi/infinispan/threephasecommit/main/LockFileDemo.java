@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.netty.threephasecommit.main;
+package cz.muni.fi.infinispan.threephasecommit.main;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,18 +20,25 @@ import java.util.logging.Logger;
  * @author Simon
  */
 public class LockFileDemo {
-    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop\\";
     private static final String FILE_NAME = "file.txt";
+    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop\\";
     static final File lockFile = new File(FILE_PATH, FILE_NAME);
-
+    
     static FileLock fileLock = null;
     static RandomAccessFile file = null;
 
+    /**
+     * Returns the site's transaction decision
+     *
+     * @return the site's decision to commit or abort
+     */
     public static void lockFile() {
         try {
             LockFileDemo.file = new RandomAccessFile(LockFileDemo.lockFile, "rw");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Cannot create or modify file at path: " + LockFileDemo.lockFile.getPath() + ".");
+            System.exit(1);
         }
         FileChannel f = LockFileDemo.file.getChannel();
         FileLock lock = null;

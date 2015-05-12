@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2012 The Netty Project
  *
  * The Netty Project licenses this file to you under the Apache License,
@@ -15,14 +15,13 @@
  */
 package cz.muni.fi.netty.twophasecommit.participant;
 
+import cz.muni.fi.netty.twophasecommit.main.Main;
+import cz.muni.fi.netty.twophasecommit.main.Main.TransactionDecision;
 import cz.muni.fi.netty.twophasecommit.main.LockFileDemo;
-import static cz.muni.fi.netty.twophasecommit.main.LockFileDemo.TRANSACTION_DATA;
-import cz.muni.fi.netty.twophasecommit.main.LockFileDemo.TransactionDecision;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
-import java.nio.channels.FileLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,18 +31,17 @@ import java.util.logging.Logger;
 @Sharable
 public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
     
-    private FileLock lock = null;
+    private String decision = null;
     
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws IOException, InterruptedException {
         
         switch(msg) {
             case "canCommit?": {
-                String decision;
-                if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
+                if (TransactionDecision.commit.equals(Main.decideTransaction())) {
                     decision = "commit";
                     //lock resources
-                    lock = LockFileDemo.lockFile();
+                    LockFileDemo.lockFile();
                 } else {
                     decision = "abort";
                 }
@@ -51,9 +49,9 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
                 break;
             }
             case "commited": {
-                LockFileDemo.writeToFile(TRANSACTION_DATA);
+                LockFileDemo.writeToFile(Main.TRANSACTION_DATA);
                 //release locked resources
-                LockFileDemo.releaseLock(lock);
+                LockFileDemo.releaseLock();
                 //acknowledge having received the result
                 ctx.writeAndFlush("ACK" + "\r\n");
                 printResult("commited");
@@ -62,8 +60,8 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
             }
             case "aborted": {
                 //release locked resources if they have been locked
-                if (lock != null) {
-                    LockFileDemo.releaseLock(lock);
+                if ("commit".equals(decision)) {
+                    LockFileDemo.releaseLock();
                 }
                 //acknowledge having received the result
                 ctx.writeAndFlush("ACK" + "\r\n");

@@ -21,7 +21,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import cz.muni.fi.netty.twophasecommit.main.LockFileDemo;
+import cz.muni.fi.netty.twophasecommit.main.Main;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,7 +43,7 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         channels.add(ctx.channel());
-        if (channels.size() == LockFileDemo.SITES_COUNT) {
+        if (channels.size() == Main.SITES_COUNT) {
             for (Channel c : channels) {
                 c.writeAndFlush("canCommit?\r\n");
             }
@@ -55,7 +55,7 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
         switch(request) {
             case "commit": {
                 commitedCounter++;
-                if (commitedCounter == LockFileDemo.SITES_COUNT) {
+                if (commitedCounter == Main.SITES_COUNT) {
                     result = "commited";
                     for (Channel c : channels) {
                         c.writeAndFlush("commited\r\n");
@@ -72,7 +72,7 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
             }
             case "ACK": {
                 acknowledgedCounter++;
-                if (acknowledgedCounter == LockFileDemo.SITES_COUNT) {
+                if (acknowledgedCounter == Main.SITES_COUNT) {
                     printResult(result);
                     ctx.close();
                 }

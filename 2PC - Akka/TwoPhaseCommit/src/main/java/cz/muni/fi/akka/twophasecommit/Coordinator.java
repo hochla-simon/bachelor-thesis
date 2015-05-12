@@ -87,19 +87,23 @@ public class Coordinator extends UntypedActor {
     }
     
     /**
-     * Creates participants in the given paths (possibly in a different actor system according to the coordination file),
+     * Creates participants in the given paths (possibly in a different actor 
+     * system according to the coordination file),
      * then create the coordinator and perform the two phase commit.
      * @param paths Paths to the participant actors
      */
     public static void run(final List<String> paths) {
         
         // Create an Akka system
-        ActorSystem coordinatorSystem = ActorSystem.create("2PCCoordinatorSystem", ConfigFactory.load("coordinator"));
+        ActorSystem coordinatorSystem = ActorSystem.create
+        ("2PCCoordinatorSystem", ConfigFactory.load("coordinator"));
 
         // create the result listener, which will print the result and shutdown the system
-        final ActorRef coordinatorListener = coordinatorSystem.actorOf(Props.create(Listener.class), "listener");
+        final ActorRef coordinatorListener = coordinatorSystem.actorOf
+        (Props.create(Listener.class), "listener");
 		
-        //create participants (they can be created remotely in different actor systems according to the coordination)
+        //create participants (they can be created remotely in different actor
+        //systems according to the coordination)
         ActorRef participant1 = coordinatorSystem.actorOf(Props.create(Participant.class), "p1");
         ActorRef participant2 = coordinatorSystem.actorOf(Props.create(Participant.class), "p2");
         

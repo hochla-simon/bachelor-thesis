@@ -1,4 +1,4 @@
-package cz.fi.muni.zookeeper.threePhaseCommit;
+package cz.muni.fi.zookeeper.threePhaseCommit;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -6,7 +6,9 @@ package cz.fi.muni.zookeeper.threePhaseCommit;
  * and open the template in the editor.
  */
 
-import static cz.fi.muni.zookeeper.threePhaseCommit.LockFileDemo.TRANSACTION_DATA;
+import cz.muni.fi.zookeeper.threePhaseCommit.main.Main;
+import static cz.muni.fi.zookeeper.threePhaseCommit.main.Main.TRANSACTION_DATA;
+import cz.muni.fi.zookeeper.threePhaseCommit.main.LockFileDemo;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.channels.FileLock;
@@ -25,7 +27,6 @@ public class Participant extends SyncPrimitive {
     private final int size;
     private String sitePath;
     private String transaction;
-    private FileLock lock;
 
     public enum ParticipantVote {
         Yes, No, ACK, haveCommited
@@ -38,7 +39,6 @@ public class Participant extends SyncPrimitive {
         
         this.sitePath = null;
         this.transaction = null;
-        this.lock = null;
 
         if (zk != null) {
             Stat s = zk.exists(root, false);
@@ -64,10 +64,10 @@ public class Participant extends SyncPrimitive {
         
         //decide transaction and lock resources when agree with commit
         ParticipantVote decision;
-        if (LockFileDemo.TransactionDecision.commit.
-                equals(LockFileDemo.decideTransaction())) {
+        if (Main.TransactionDecision.commit.
+                equals(Main.decideTransaction())) {
             decision = ParticipantVote.Yes;
-            lock = LockFileDemo.lockFile();
+            LockFileDemo.lockFile();
         } else {
             decision = ParticipantVote.No;
         }
@@ -78,8 +78,8 @@ public class Participant extends SyncPrimitive {
         
         if (result != Coordinator.CoordinatorVote.preCommit) {
             //release resources if they have been locked
-            if (lock != null) {
-                LockFileDemo.releaseLock(lock);
+            if (decision == ParticipantVote.Yes) {
+                LockFileDemo.releaseLock();
             }
             return false;
         }
@@ -89,13 +89,13 @@ public class Participant extends SyncPrimitive {
         
         if (result != Coordinator.CoordinatorVote.doCommit) {
             //release resources
-            LockFileDemo.releaseLock(lock);
+            LockFileDemo.releaseLock();
             return false;
         }
         //write the commited transaction data to the file
-        LockFileDemo.writeToFile(TRANSACTION_DATA);
+        LockFileDemo.writeToFile(Main.TRANSACTION_DATA);
         //release resources
-        LockFileDemo.releaseLock(lock);
+        LockFileDemo.releaseLock();
         sendAcknowledgement(ParticipantVote.haveCommited);
         return true;
     }

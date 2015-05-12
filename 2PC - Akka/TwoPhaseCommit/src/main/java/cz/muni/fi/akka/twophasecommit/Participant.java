@@ -5,12 +5,12 @@
  */
 package cz.muni.fi.akka.twophasecommit;
 
+import cz.muni.fi.akka.twophasecommit.main.Main;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import com.typesafe.config.ConfigFactory;
-import static cz.muni.fi.akka.twophasecommit.LockFileDemo.TRANSACTION_DATA;
-import cz.muni.fi.akka.twophasecommit.LockFileDemo.TransactionDecision;
-import java.nio.channels.FileLock;
+import cz.muni.fi.akka.twophasecommit.main.Main.TransactionDecision;
+import cz.muni.fi.akka.twophasecommit.main.LockFileDemo;
 
 /**
  *
@@ -21,7 +21,7 @@ public class Participant extends UntypedActor{
         commit, abort, ACK
     }
     
-    private FileLock lock = null;
+    private Decision decision = null;
 
     @Override
     public void onReceive(Object msg) {
@@ -29,33 +29,34 @@ public class Participant extends UntypedActor{
             Coordinator.Request request = (Coordinator.Request) msg;
             switch(request) {
                 case canCommit: {
-                    Decision decision;
-                    if (TransactionDecision.commit.equals(LockFileDemo.decideTransaction())) {
+                    if (TransactionDecision.commit == Main.decideTransaction()) {
                         decision = Decision.commit;
                         //lock resources
-                        lock = LockFileDemo.lockFile();
+                        LockFileDemo.lockFile();
                     } else {
                         decision = Decision.abort;
                     }
-                    System.out.println("Result from " + getSelf().path() + " is: " + decision);
+//                    System.out.println("Result from " + getSelf().path() + " is: " + decision);
                     getSender().tell(decision, getSelf());
                     break;
                 } case commit: {
                     //write to file the commited data
-                    LockFileDemo.writeToFile(TRANSACTION_DATA);
+                    LockFileDemo.writeToFile(Main.TRANSACTION_DATA);
                     //release locked resources
-                    LockFileDemo.releaseLock(lock);
+                    LockFileDemo.releaseLock();
                     //acknowledge having received the result
                     getSender().tell("ACK", getSelf());
+                    printResult("commited");
                     getContext().stop(getSelf());
                     break;
                 } case abort: {
                     //release resources if they have been locked
-                    if (lock != null) {
-                        LockFileDemo.releaseLock(lock);
+                    if (decision == Decision.commit) {
+                        LockFileDemo.releaseLock();
                     }
                     //acknowledge having received the result
                     getSender().tell("ACK", getSelf());
+                    printResult("aborted");
                     getContext().stop(getSelf());
                     break;
                 }
@@ -70,5 +71,9 @@ public class Participant extends UntypedActor{
      */
     public static void run() {
         ActorSystem.create("2PCParticipantSystem", ConfigFactory.load("participant"));
+    }
+    
+    private void printResult(String result) {
+        System.out.println("Transaction has been " + result + ".");
     }
 }

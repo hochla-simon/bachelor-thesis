@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.netty.threephasecommit.main;
+package cz.muni.fi.zookeeper.threePhaseCommit.main;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,25 +20,34 @@ import java.util.logging.Logger;
  * @author Simon
  */
 public class LockFileDemo {
-    private static final String FILE_PATH = "C:\\Users\\Simon\\Desktop\\";
+    //path to the locked file
+    private static final String FILE_PATH = "/home/simon/Desktop/";
+    //name of the locked file
     private static final String FILE_NAME = "file.txt";
-    static final File lockFile = new File(FILE_PATH, FILE_NAME);
+    //file to lock
+    static final File LOCK_FILE = new File(FILE_PATH, FILE_NAME);
+    
+    private static FileLock fileLock = null;
+    private static RandomAccessFile file = null;
 
-    static FileLock fileLock = null;
-    static RandomAccessFile file = null;
-
+    /**
+     * Lock the file LOCK_FILE if possible, otherwise exit with error
+     * @return the locked file
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public static void lockFile() {
         try {
-            LockFileDemo.file = new RandomAccessFile(LockFileDemo.lockFile, "rw");
+            LockFileDemo.file = new RandomAccessFile(LockFileDemo.LOCK_FILE, "rw");
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
-        FileChannel f = LockFileDemo.file.getChannel();
+        FileChannel fileChannel = LockFileDemo.file.getChannel();
         FileLock lock = null;
         try {
-            lock = f.tryLock();
+            lock = fileChannel.tryLock();
         } catch (IOException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
         if (lock == null || !lock.isValid()) {
             System.out.println("Lock for file " + LockFileDemo.file + " cannot be applied.");
@@ -49,7 +58,7 @@ public class LockFileDemo {
 
     /**
      * Release the lock 'lock' and close the file 'file'
-     *
+     * @param fileLock file to lock
      * @throws IOException
      */
     public static void releaseLock() {
@@ -57,7 +66,7 @@ public class LockFileDemo {
             try {
                 LockFileDemo.fileLock.release();
             } catch (IOException ex) {
-                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
             System.out.println("Lock " + LockFileDemo.fileLock + " is unvalid.");
@@ -66,7 +75,7 @@ public class LockFileDemo {
             LockFileDemo.file.close();
             file = null;
         } catch (IOException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -84,7 +93,7 @@ public class LockFileDemo {
                 f.write(byteBuffer);
             }
         } catch (IOException e) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(LockFileDemo.class.getName()).log(Level.SEVERE, null, e);
         }
     }
     

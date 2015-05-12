@@ -22,7 +22,8 @@ public class Coordinator extends SyncPrimitive {
     private final int numberOfParticipants;
     private final String transaction;
 
-    Coordinator(String address, String root, int numberOfParticipants, String transaction) throws KeeperException, InterruptedException {
+    Coordinator(String address, String root, int numberOfParticipants, String transaction)
+            throws KeeperException, InterruptedException {
         super(address);
         this.root = root;
         this.numberOfParticipants = numberOfParticipants;
@@ -43,6 +44,7 @@ public class Coordinator extends SyncPrimitive {
      * their votes, decide result based on the collected votes,
      * report the result back to the transactions and finally, wait
      * for their acknowledgements.
+     * 
      * @return true when the transaction has been commited, false otherwise
      * @throws InterruptedException
      * @throws KeeperException

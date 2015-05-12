@@ -50,7 +50,7 @@ public class Coordinator {
        SiteVotesListener siteVotesListener = new SiteVotesListener();
        sitesCache.addListener(siteVotesListener);
        
-       //initialize synchronization primtiive for result change
+       //initialize synchronization primitive for result change
        mutex = new Integer(-1);
         
        //wait for being notified of the result change
@@ -120,27 +120,29 @@ public class Coordinator {
          */
         @CacheEntryModified
         public synchronized void addSitesDecision(CacheEntryEvent e) {
-            switch((String) e.getValue()) {
-                case "commit": {
-                    commitedSites.add((Address) e.getKey());
-                    if (commitedSites.size() == sitesCount) {
-                        reportTransactionDecision("commited");
-                    }
-                    break;
-                }
-                case "abort": {
-                     reportTransactionDecision("aborted");
-                     break;
-                }
-                case "ACK": {
-                    acknowledgedSites.add((Address) e.getKey());
-                    if (acknowledgedSites.size() == sitesCount) {
-                        //notify the coordinator of the result
-                        synchronized (mutex) {
-                            mutex.notify();
+            if (!e.isPre()) {
+                switch((String) e.getValue()) {
+                    case "commit": {
+                        commitedSites.add((Address) e.getKey());
+                        if (commitedSites.size() == sitesCount) {
+                            reportTransactionDecision("commited");
                         }
+                        break;
                     }
-                    break;
+                    case "abort": {
+                         reportTransactionDecision("aborted");
+                         break;
+                    }
+                    case "ACK": {
+                        acknowledgedSites.add((Address) e.getKey());
+                        if (acknowledgedSites.size() == sitesCount) {
+                            //notify the coordinator of the result
+                            synchronized (mutex) {
+                                mutex.notify();
+                            }
+                        }
+                        break;
+                    }
                 }
             }
         }

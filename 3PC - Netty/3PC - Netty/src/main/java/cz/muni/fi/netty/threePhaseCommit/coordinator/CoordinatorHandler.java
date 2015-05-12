@@ -15,7 +15,7 @@
  */
 package cz.muni.fi.netty.threephasecommit.coordinator;
 
-import static cz.muni.fi.netty.threephasecommit.main.LockFileDemo.SITES_COUNT;
+import static cz.muni.fi.netty.threephasecommit.main.Main.SITES_COUNT;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;

@@ -24,6 +24,12 @@ public class Coordinator {
     private String result = "";
     private static Integer mutex;
     private int sitesCount;
+        
+    /**
+     * Used for saving the current time while managing timeouts.
+     */
+    private Long start = null;
+    private static final long TIMEOUT = 5000;
     
     /**
      * Performs the three phase phase commit over the group of connected
@@ -49,6 +55,7 @@ public class Coordinator {
        
        //forward initial request to all sites
        coordinatorCache.put("request", "canCommit");
+       startCountingTimeout();
        
        //create listener for the sitesCache
        SiteVotesListener siteVotesListener = new SiteVotesListener();
@@ -87,17 +94,6 @@ public class Coordinator {
        return members.size() - 1;
    }
    
-   public static void threePhaseCommitTest() {
-       Coordinator coordinator = new Coordinator();
-       boolean result = coordinator.performThreePhaseCommit();
-
-       if (result) {
-           System.out.println("Transaction was commited.");
-       } else {
-           System.out.println("Transaction was aborted.");
-       }
-   }
-   
     /**
      * Perform the two phase commit and print the result of the transaction
      */
@@ -109,6 +105,22 @@ public class Coordinator {
             System.out.println("Transaction was commited.");
         } else {
             System.out.println("Transaction was aborted.");
+        }
+    }
+    
+    private void startCountingTimeout() {
+        start = System.currentTimeMillis();
+    }
+
+    private void abortIfTimeoutElapsed() {
+        if ((System.currentTimeMillis() - start) > TIMEOUT) {
+            coordinatorCache.put("decision", "abort");
+            result = "aborted";
+
+            //notify the coordinator of the result
+            synchronized (mutex) {
+                mutex.notify();
+            }
         }
     }
     
@@ -127,8 +139,6 @@ public class Coordinator {
          * Set of unique addresses of participants which have already acknowledged commiting or aborting.
          */
         private final Set<Address> haveCommitedSites = Collections.synchronizedSet(new HashSet<Address>());
-        private long start;
-        private static final long TIMEOUT = 5000;
 
 
         /**
@@ -139,46 +149,49 @@ public class Coordinator {
         @CacheEntryCreated
         @CacheEntryModified
         public synchronized void addSitesDecision(CacheEntryEvent e) {
-            switch((String) e.getValue()) {
-                case "Yes": {
-                    canCommitSites.add((Address) e.getKey());
-                    if (canCommitSites.size() == sitesCount) {
-                        coordinatorCache.put("request", "preCommit");
+            if (!e.isPre()) {
+                switch((String) e.getValue()) {
+                    case "Yes": {
+                        abortIfTimeoutElapsed();
+                        canCommitSites.add((Address) e.getKey());
+                        if (canCommitSites.size() == sitesCount) {
+                            coordinatorCache.put("request", "preCommit");
+                            System.out.println("called preCommit");
+                        }
+                        startCountingTimeout();
+                        break;
                     }
-                    break;
-                }
-                case "No": {
-                    coordinatorCache.put("decision", "abort");
-                    result = "aborted";
+                    case "No": {
+                        coordinatorCache.put("decision", "abort");
+                        result = "aborted";
 
-                    //notify the coordinator of the result
-                    synchronized (mutex) {
-                        mutex.notify();
-                    }
-                    break;
-                }
-                case "ACK": {
-                    acknowledgedSites.add((Address) e.getKey());
-                    if (acknowledgedSites.size() == sitesCount) {
-                        coordinatorCache.put("decision", "doCommit");
-                        result = "commited";
-                        System.currentTimeMillis();
-                    }
-                    break;
-                }
-                case "haveCommited": {
-                    if ((System.currentTimeMillis() - start) > TIMEOUT) {
-                        System.out.println("Error: Some participants have timed out before they "
-                                + "acknowledged having commited the transaction.");
-                    }
-                    haveCommitedSites.add((Address) e.getKey());
-                    if (haveCommitedSites.size() == sitesCount) {
                         //notify the coordinator of the result
                         synchronized (mutex) {
                             mutex.notify();
                         }
+                        break;
                     }
-                    break;
+                    case "ACK": {
+                        abortIfTimeoutElapsed();
+                        acknowledgedSites.add((Address) e.getKey());
+                        if (acknowledgedSites.size() == sitesCount) {
+                            coordinatorCache.put("decision", "doCommit");
+                            result = "commited";
+                        }
+                        startCountingTimeout();
+                        break;
+                    }
+                    case "haveCommited": {
+                        abortIfTimeoutElapsed();
+                        haveCommitedSites.add((Address) e.getKey());
+                        if (haveCommitedSites.size() == sitesCount) {
+                            //notify the coordinator of the result
+                            synchronized (mutex) {
+                                mutex.notify();
+                            }
+                        }
+                        break;
+                    }
                 }
             }
         }

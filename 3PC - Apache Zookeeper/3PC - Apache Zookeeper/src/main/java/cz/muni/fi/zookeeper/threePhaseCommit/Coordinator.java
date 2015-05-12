@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.zookeeper.threePhaseCommit;
+package cz.muni.fi.zookeeper.threePhaseCommit;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
@@ -17,8 +17,13 @@ import org.apache.zookeeper.data.Stat;
  * @author simon
  */
 public class Coordinator extends SyncPrimitive {
-
+    
     private final int size;
+    
+    /**
+     * Used for saving the current time while managing timeouts.
+     */
+    private Long start = null;
     private static final long TIMEOUT = 5000;
     
     public enum CoordinatorVote {
@@ -133,6 +138,7 @@ public class Coordinator extends SyncPrimitive {
     private CoordinatorVote decideResult() throws UnsupportedEncodingException, 
             InterruptedException, KeeperException {
         Stat stat = new Stat();
+        startCountingTimeout();
         while (true) {
             synchronized (mutex) {
                 int canCommitCounter = 0;
@@ -153,6 +159,9 @@ public class Coordinator extends SyncPrimitive {
                     return CoordinatorVote.preCommit;
                 }
                 mutex.wait();
+                if (hasTimeoutElapsed()) {
+                    return CoordinatorVote.abort;
+                }
             }
         }
     }
@@ -160,7 +169,7 @@ public class Coordinator extends SyncPrimitive {
     private boolean collectVotes(Participant.ParticipantVote awaitedVote)
             throws UnsupportedEncodingException, InterruptedException, KeeperException {
         Stat stat = new Stat();
-        long start = System.currentTimeMillis();
+        startCountingTimeout();
         while (true) {
             synchronized (mutex) {
                 int counter = 0;
@@ -179,11 +188,19 @@ public class Coordinator extends SyncPrimitive {
                 if (counter == size) return true;
                 
                 mutex.wait(TIMEOUT);
-                if ((System.currentTimeMillis() - start) > TIMEOUT) {
+                if (hasTimeoutElapsed()) {
                     return false;
                 }
             }
         }
+    }
+    
+    private void startCountingTimeout() {
+        start = System.currentTimeMillis();
+    }
+    
+    private boolean hasTimeoutElapsed() {
+        return (System.currentTimeMillis() - start) > TIMEOUT;
     }
 
     void leave() throws KeeperException, InterruptedException {

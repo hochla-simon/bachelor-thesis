@@ -5,8 +5,13 @@
  */
 package cz.muni.fi.zookeeper.lock;
 
+import cz.muni.fi.zookeeper.main.Main;
+import cz.muni.fi.zookeeper.main.LockFileDemo;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -99,6 +104,27 @@ public class Lock extends SyncPrimitive {
                 }
                 mutex.wait();
             }
+        }
+    }
+    
+    /**
+     * Wait until I have acquired the lock, lock resources, sleep for 5 seconds,
+     * release resources and shut down.
+     *
+     * @throws InterruptedException
+     * @throws KeeperException
+     * @throws UnsupportedEncodingException
+     */
+    public static void electionTest() {
+        try {
+            Lock lock = new Lock(Main.HOST, Main.PORT, "/_locknode_");
+            lock.lock();
+            LockFileDemo.lockFile();
+            Thread.sleep(5000);
+            LockFileDemo.releaseLock();
+            lock.unlock();
+        } catch (InterruptedException | KeeperException | IOException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }
