@@ -5,7 +5,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>LeaderElection</artifactId>
-  <groupId>cz.muni.fi.twophasecommit</groupId>
+  <groupId>cz.muni.fi.akka.leaderelection</groupId>
   <name>LeaderElection</name>
   <version>1.0</version>
   
