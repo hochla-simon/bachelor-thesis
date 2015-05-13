@@ -23,7 +23,7 @@ public class ElectionCandidate {
      * incremental value assigned when they entered the cache. After the member
      * performs the leadership method, member removes its entry from this cache.
      */
-    private Cache<Integer, Address> electableMembersCache;
+    private Cache<Long, Address> electableMembersCache;
 
     /**
      * Cache with the address of the current leader.
@@ -39,7 +39,7 @@ public class ElectionCandidate {
      * Index assigned when entering the electableMembersCache, it is an
      * incremental value.
      */
-    private Integer myIndex;
+    private Long myIndex;
 
     /**
      * Manager managing both leaderCache and embeddedMembersCache.
@@ -52,27 +52,22 @@ public class ElectionCandidate {
      */
     public void becomeElectable() {
         initializeCachesAndMyAddress();
-
-        CloseableIteratorSet<Integer> keySet = electableMembersCache.keySet();
-        //if electableMembersCache contains any values, assign my address index greater
-        //than the maximal index contained in the cache, otherwise index is 0
-        if (keySet.isEmpty()) {
-            myIndex = 0;
-        } else {
-            //converting CloseableIteratorSet to ArrayList to be able to acquire the minimal value
-            List<Integer> memberIndexes = new ArrayList<>();
-            for (Integer index : keySet) {
-                memberIndexes.add(index);
-            }
-            Integer maxIndex = Collections.max(memberIndexes);
-            myIndex = maxIndex + 1;
-        }
-
+       
+        myIndex = System.currentTimeMillis();
         electableMembersCache.put(myIndex, myAddress);
+        
+        CloseableIteratorSet<Long> keySet = electableMembersCache.keySet();
+
+//      converting CloseableIteratorSet to ArrayList to be able to acquire the minimal value
+        List<Long> memberIndexes = new ArrayList<>();
+        for (Long index : keySet) {
+            memberIndexes.add(index);
+        }
+        Long minIndex = Collections.min(memberIndexes);
 
         //if I am the only active electable member, I become the leader,
         //otherwise set listener on leaderCache triggered when the current leader finishes   
-        if (myIndex == 0) {
+        if (myIndex.equals(minIndex)) {
             becomeLeader();
             embeddedCacheManager.stop();
         } else {
@@ -121,7 +116,7 @@ public class ElectionCandidate {
 
         @ViewChanged
         public synchronized void leaderAddressRemoved(ViewChangedEvent  e) {
-            CloseableIteratorSet<Integer> keySet = electableMembersCache.keySet();
+            CloseableIteratorSet<Long> keySet = electableMembersCache.keySet();
             CloseableIteratorCollection<Address> values = electableMembersCache.values();
             
             List<Address> newMembers = e.getNewMembers();
@@ -139,7 +134,7 @@ public class ElectionCandidate {
             //removing the disconnected nodes from the electableMembersCache
             for (Address disconnectedNode : disconnectedMembers) {
                 if (values.contains(disconnectedNode)) {
-                    for (Integer nodeId : keySet) {
+                    for (Long nodeId : keySet) {
                         if (disconnectedNode.equals(electableMembersCache.get(nodeId))) {
                             electableMembersCache.remove(nodeId);
                         }
@@ -147,24 +142,19 @@ public class ElectionCandidate {
                 }
             }
             
-            //get the minimal index from electableMembersCache to determine the new leader
-            Integer minIndex;
             if (!keySet.isEmpty()) {
-                //convert CloseableIteratorSet to ArrayList
-                //to be able to get the minimal value
-                List<Integer> memberIndexes = new ArrayList<>();
-                for (Integer index : keySet) {
+                //converting CloseableIteratorSet to ArrayList to be able to acquire the minimal value
+                List<Long> memberIndexes = new ArrayList<>();
+                for (Long index : keySet) {
                     memberIndexes.add(index);
                 }
-                minIndex = Collections.min(memberIndexes);
-            } else {
-                minIndex = - 1;
-            }
+                Long minIndex = Collections.min(memberIndexes);
 
-            //if my index is the minimal index, I will become the leader
-            if (minIndex.equals(myIndex)) {
-                becomeLeader();
-                embeddedCacheManager.stop();
+                //if my index is the minimal index, I will become the leader
+                if (minIndex.equals(myIndex)) {
+                    becomeLeader();
+                    embeddedCacheManager.stop();
+                }
             }
         }
     }
