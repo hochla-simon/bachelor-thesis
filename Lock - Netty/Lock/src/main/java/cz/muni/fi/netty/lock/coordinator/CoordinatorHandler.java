@@ -58,9 +58,6 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
         final Channel channelWithMinId = determineLeader();
         channelWithMinId.writeAndFlush("canLock\r\n");
         informParticipantsAboutNewLeader(channelWithMinId);
-
-        ChannelFuture closeFuture = channelWithMinId.closeFuture();
-        closeFuture.addListener(new LeaderClosedListener(channelWithMinId));
     }
     
     /**
@@ -126,5 +123,10 @@ public class CoordinatorHandler extends SimpleChannelInboundHandler<String> {
     }
     
     @Override
-    protected void channelRead0(ChannelHandlerContext chc, String i) throws Exception {}
+    protected void channelRead0(ChannelHandlerContext chc, String msg) throws Exception {
+        if (msg.equals("lockReleased")) {
+           channels.remove(chc.channel());
+           electLeader();
+        }
+    }
 }

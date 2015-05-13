@@ -39,7 +39,7 @@ public class ParticipantHandler extends SimpleChannelInboundHandler<String> {
         //otherwise print info containg ID of participant having acquired the lock
         if (msg.equals("canLock")) {
             uniqueResourcesAccessOperation();
-            ctx.close();
+            ctx.writeAndFlush("lockReleased\r\n");
         } else {
             System.out.println(msg);
         }
