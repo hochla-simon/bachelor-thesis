@@ -58,7 +58,7 @@ public class ElectionCandidate {
         
         CloseableIteratorSet<Long> keySet = electableMembersCache.keySet();
 
-//      converting CloseableIteratorSet to ArrayList to be able to acquire the minimal value
+        //converting CloseableIteratorSet to ArrayList to be able to acquire the minimal value
         List<Long> memberIndexes = new ArrayList<>();
         for (Long index : keySet) {
             memberIndexes.add(index);
