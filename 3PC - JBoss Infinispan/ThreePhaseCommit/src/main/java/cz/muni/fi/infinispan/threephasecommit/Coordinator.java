@@ -156,7 +156,6 @@ public class Coordinator {
                         canCommitSites.add((Address) e.getKey());
                         if (canCommitSites.size() == sitesCount) {
                             coordinatorCache.put("request", "preCommit");
-                            System.out.println("called preCommit");
                         }
                         startCountingTimeout();
                         break;

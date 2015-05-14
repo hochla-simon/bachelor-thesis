@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.zookeeper.leaderElection;
+package cz.muni.fi.zookeeper.leaderElection;
 
-import static cz.fi.muni.zookeeper.leaderElection.SyncPrimitive.zk;
+import static cz.muni.fi.zookeeper.leaderElection.SyncPrimitive.zk;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.List;

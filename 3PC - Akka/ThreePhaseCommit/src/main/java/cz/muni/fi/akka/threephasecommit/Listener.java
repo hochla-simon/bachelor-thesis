@@ -21,7 +21,7 @@ public class Listener extends UntypedActor {
     public void onReceive(Object message) {
         if (message instanceof String) {
             String result = (String) message;
-            System.out.println(result);
+            System.out.println("\n" + result + "\n");
             getContext().system().shutdown();
         } else {
             unhandled(message);

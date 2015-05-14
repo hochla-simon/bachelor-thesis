@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.zookeeper.leaderElection;
+package cz.muni.fi.zookeeper.leaderElection;
 
 import java.io.IOException;
 import org.apache.zookeeper.WatchedEvent;

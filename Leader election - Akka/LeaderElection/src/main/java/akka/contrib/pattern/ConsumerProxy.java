@@ -62,7 +62,6 @@ public class ConsumerProxy extends UntypedActor {
             }
             membersByAge.clear();
             membersByAge.addAll(members);
-
         } else if (message instanceof MemberUp) {
             Member m = ((MemberUp) message).member();
             if (m.hasRole(role)) {

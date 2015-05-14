@@ -7,11 +7,9 @@ package cz.muni.fi.zookeeper.threePhaseCommit;
  */
 
 import cz.muni.fi.zookeeper.threePhaseCommit.main.Main;
-import static cz.muni.fi.zookeeper.threePhaseCommit.main.Main.TRANSACTION_DATA;
 import cz.muni.fi.zookeeper.threePhaseCommit.main.LockFileDemo;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.channels.FileLock;
 import java.util.List;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -140,7 +138,7 @@ public class Participant extends SyncPrimitive {
      */
     private void sendAcknowledgement(ParticipantVote acknowledgement)
             throws KeeperException, InterruptedException {
-        if (acknowledgement != ParticipantVote.ACK ||
+        if (acknowledgement != ParticipantVote.ACK &&
                 acknowledgement != ParticipantVote.haveCommited) {
             throw new IllegalArgumentException(
                     "Acknowledgement must be either 'ACK' or 'haveCommited'.");
