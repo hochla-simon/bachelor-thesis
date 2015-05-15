@@ -5,8 +5,8 @@
  */
 package cz.muni.fi.zookeeper.lock;
 
-import cz.muni.fi.zookeeper.main.Main;
-import cz.muni.fi.zookeeper.main.LockFileDemo;
+import cz.muni.fi.zookeeper.lock.main.Main;
+import cz.muni.fi.zookeeper.lock.main.LockFileDemo;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;

@@ -31,6 +31,7 @@ public class SimpleClusterListener extends UntypedActor {
 
   @Override
   public void onReceive(Object message) {
+    
     if (message instanceof MemberUp) {
       MemberUp mUp = (MemberUp) message;
       log.info("Member is Up: {}", mUp.member());

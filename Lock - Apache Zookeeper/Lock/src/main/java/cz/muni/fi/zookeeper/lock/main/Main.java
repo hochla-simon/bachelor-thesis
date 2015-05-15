@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.zookeeper.main;
+package cz.muni.fi.zookeeper.lock.main;
 
 import cz.muni.fi.zookeeper.lock.Lock;
 

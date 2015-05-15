@@ -173,7 +173,7 @@ public class ElectionCandidate {
         System.out.println("---Leaving.---");
     }
 
-    public static void main(String[] argc) {
+    public static void main(String[] args) {
         ElectionCandidate coordinator = new ElectionCandidate();
         coordinator.becomeElectable();
     }

@@ -3,12 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.zookeeper.twophasecommit;
+package cz.muni.fi.zookeeper.twophasecommit;
 
-import cz.fi.muni.zookeeper.twophasecommit.main.Main;
-import cz.fi.muni.zookeeper.twophasecommit.main.Main.TransactionDecision;
-import static cz.fi.muni.zookeeper.twophasecommit.SyncPrimitive.zk;
-import cz.fi.muni.zookeeper.twophasecommit.main.LockFileDemo;
+import cz.muni.fi.zookeeper.twophasecommit.main.Main;
+import cz.muni.fi.zookeeper.twophasecommit.main.Main.TransactionDecision;
+import static cz.muni.fi.zookeeper.twophasecommit.SyncPrimitive.zk;
+import cz.muni.fi.zookeeper.twophasecommit.main.LockFileDemo;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;

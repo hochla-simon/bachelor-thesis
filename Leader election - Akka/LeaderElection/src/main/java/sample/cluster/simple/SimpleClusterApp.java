@@ -1,5 +1,6 @@
 package sample.cluster.simple;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 
@@ -26,9 +27,8 @@ public class SimpleClusterApp {
       ActorSystem system = ActorSystem.create("ClusterSystem", config);
 
       // Create an actor that handles cluster domain events
-      system.actorOf(Props.create(SimpleClusterListener.class),
+      ActorRef actor = system.actorOf(Props.create(SimpleClusterListener.class),
           "clusterListener");
-
     }
   }
 }

@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.zookeeper.twophasecommit;
+package cz.muni.fi.zookeeper.twophasecommit;
 
-import static cz.fi.muni.zookeeper.twophasecommit.SyncPrimitive.zk;
+import static cz.muni.fi.zookeeper.twophasecommit.SyncPrimitive.zk;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import org.apache.zookeeper.CreateMode;

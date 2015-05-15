@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.fi.muni.zookeeper.twophasecommit.main;
+package cz.muni.fi.zookeeper.twophasecommit.main;
 
-import cz.fi.muni.zookeeper.twophasecommit.Coordinator;
-import cz.fi.muni.zookeeper.twophasecommit.Participant;
+import cz.muni.fi.zookeeper.twophasecommit.Coordinator;
+import cz.muni.fi.zookeeper.twophasecommit.Participant;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
